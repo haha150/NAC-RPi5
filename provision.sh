@@ -94,14 +94,15 @@ echo -e "   ${INFO_EMOJI} ${BLUE}If you have configured wlan0 manually or via Ra
 
 cat <<EOL > "$HOSTAPD_CONF"
 interface=wlan0
-driver=nl80211
+#driver=nl80211
 ssid=${WIFI_SSID}
 hw_mode=g
 channel=6
 ieee80211n=1
 ieee80211d=1
 country_code=DE
-wme_enabled=1
+#wme_enabled=1
+wmm_enabled=1
 auth_algs=1
 ignore_broadcast_ssid=0
 macaddr_acl=0
