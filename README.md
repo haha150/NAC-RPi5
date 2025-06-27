@@ -67,3 +67,27 @@ The RPi4 will have the IP address `192.168.200.1`. Just connect with your favori
 Use the tools `nac_bypass` and `silentbridge` to your advantage.
 
 May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
+
+#### nac_bypass
+
+1. Connect the switch to eth0 (native LAN interface of RPi4)
+2. Connect victim (e.g. printer) to eth1 (external USB LAN adapter)
+
+Then start the nac bypass:
+
+````bash
+# by default it will treat the lower interface device as switch side, and the next one as victim
+./nac_bypass_setup.sh -1 eth0 -2 eth1
+
+# script will ask to wait some time, so it is able to dump the needed info from the network traffic
+# afterwards, you can proceed and for instance do an nmap scan on the network
+````
+
+#### silentbridge
+
+````bash
+cd /root/silentbridge
+source venv2/bin/activate
+
+python silentbridge
+````
