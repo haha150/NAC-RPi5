@@ -1,7 +1,9 @@
 # NAC-RPi4
-Bash Script to Initialize a Raspberry Pi 4 for NAC Bypassing
+Bash Script to Initialize a Raspberry Pi 4 for Bridged-based 802.1x (NAC) Bypassing
 
-This comprehensive bash script turns your **Raspberry Pi 4** into a powerful Wi-Fi hotspot and DHCP server. But it doesn't stop there! It also beefs up your Pi's security by configuring SSH and integrates advanced network tools like **NAC Bypass** and **SilentBridge** for specialized operations.
+> Classical 802.1x bypass using Linux bridges. Provides the ability to place a rogue device between a supplicant and authentication server without being detected, and to allow traffic to flow through the rogue device (where it can be sniffed). Network interactivity is provided using Source NAT (SNAT) at Layers 2 and 3.
+>
+> Defeats only 802.1x-2004 and does not work for 802.x-2010 / MACSEC.
 
 ---
 
