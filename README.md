@@ -68,7 +68,9 @@ Use the tools `nac_bypass` and `silentbridge` to your advantage.
 
 May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
 
-#### nac_bypass
+#### 5.1 - nac_bypass
+
+[README](https://github.com/scipag/nac_bypass)
 
 1. Connect the switch to eth0 (native LAN interface of RPi4)
 2. Connect victim (e.g. printer) to eth1 (external USB LAN adapter)
@@ -83,7 +85,9 @@ Then start the nac bypass:
 # afterwards, you can proceed and for instance do an nmap scan on the network
 ````
 
-#### silentbridge
+#### 5.2 - silentbridge
+
+[README](https://github.com/s0lst1c3/silentbridge/wiki)
 
 ````bash
 cd /root/silentbridge
