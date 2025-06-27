@@ -43,3 +43,27 @@ You can clone the repository (if hosted on GitHub) or directly download the scri
 git clone https://github.com/l4rm4nd/NAC-RPi4
 cd NAC-RPi4
 ```
+
+### 2. Reboot
+
+After the script has finished, please reboot your RPI4.
+
+### 3. Connect to WiFi Hotspot
+
+The RPi4 will spawn a wifi hotspot with your given SSID and password during installation.
+
+Simply connect to the access point.
+
+A DHCP server will be running, handing out client IP addresses from the range `192.168.200.2 - 100`.
+
+### 4. SSH Access
+
+Once connected to the wifi hotspot, you can access the RPi4's SSH network service on TCP/22.
+
+The RPi4 will have the IP address `192.168.200.1`. Just connect with your favorite SSH client (e.g. MobaXTerm).
+
+### 5. NAC Bypass
+
+Use the tools `nac_bypass` and `silentbridge` to your advantage.
+
+May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
