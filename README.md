@@ -3,7 +3,7 @@ Bash Script to Initialize a Raspberry Pi 4 for Bridged-based 802.1x (NAC) Bypass
 
 > Classical 802.1x bypass using Linux bridges. Provides the ability to place a rogue device between a supplicant and authentication server without being detected, and to allow traffic to flow through the rogue device (where it can be sniffed). Network interactivity is provided using Source NAT (SNAT) at Layers 2 and 3.
 >
-> Defeats only 802.1x-2004 and does not work for 802.x-2010 / MACSEC.
+> Defeats 802.1x-2004 only and does not work for 802.x-2010 / MACSEC.
 
 ---
 
