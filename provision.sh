@@ -178,6 +178,8 @@ systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
 # This ensures they pick up the wlan0 configuration.
 systemctl restart hostapd || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart hostapd. Check logs after reboot.${RESET}"
 systemctl restart isc-dhcp-server || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart isc-dhcp-server. Check logs after reboot.${RESET}"
+# Disable network manager as it mangles with hostapd and causes IEEE 802.11: disassociated
+sudo systemctl disable NetworkManager || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to disable NetworkManager. Check logs after reboot.${RESET}"
 echo -e "${SUCCESS_EMOJI} ${GREEN}Services reloaded and restarted (if possible).${RESET}\n"
 
 
