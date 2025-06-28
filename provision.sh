@@ -170,6 +170,22 @@ systemctl enable systemd-networkd || error_exit "Failed to enable systemd-networ
 systemctl restart systemd-networkd || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart systemd-networkd. Check logs or reboot.${RESET}"
 echo -e "   ${SUCCESS_EMOJI} ${GREEN}systemd-networkd enabled and restart attempted.${RESET}\n"
 
+# --- Step 7.1: Configure eth1 for DHCP using /etc/network/interfaces.d/ ---
+echo -e "${STEP_EMOJI} ${BLUE}7.1. Configuring eth1 for DHCP using /etc/network/interfaces.d/...${RESET}"
+INTERFACES_D_DIR="/etc/network/interfaces.d"
+ETH1_CONF="$INTERFACES_D_DIR/eth1"
+
+cat <<EOL > "$ETH1_CONF"
+auto eth1
+    allow-hotplug eth1
+    iface eth1 inet dhcp
+EOL
+if [ $? -ne 0 ]; then error_exit "Failed to write $ETH1_CONF."; fi
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}$ETH1_CONF created for DHCP.${RESET}"
+echo -e "    ${WARNING_EMOJI} ${YELLOW}Note: You are configuring 'eth1' using '/etc/network/interfaces.d/' while 'wlan0' is managed by 'systemd-networkd'. This is a hybrid setup and requires a reboot to take full effect for 'eth1'. Ensure NetworkManager is disabled to avoid conflicts.${RESET}\n"
+
+# The original script would continue here with Step 8.
+
 # --- Step 8: Reload systemd, enable, and restart services ---
 # Adjusted numbering from previous step
 echo -e "${STEP_EMOJI} ${BLUE}8. Reloading systemd daemon, enabling and restarting services...${RESET}"
