@@ -475,6 +475,8 @@ Description=Start Huawei LTE connection
 After=network.target
 
 [Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 60
 ExecStart=/bin/bash /home/${LTE_USERNAME}/huawei_hilink_api/example_huawei_hilink.sh on
 User=${LTE_USERNAME}
 RemainAfterExit=true
