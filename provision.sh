@@ -3,7 +3,8 @@
 # This script automates the setup of a Wi-Fi hotspot and DHCP server on a Raspberry Pi 4,
 # based on the guide from https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/
 # It also configures SSH for enhanced security, installs the nac_bypass tool,
-# installs the silentbridge tool, and sets up a Huawei LTE connection service.
+# installs the silentbridge tool, sets up a Huawei LTE connection service,
+# and optionally configures an automatic WireGuard VPN connection.
 
 # ANSI Color Codes
 RED='\033[0;31m'
@@ -33,7 +34,7 @@ if [[ $EUID -ne 0 ]]; then
     error_exit "This script must be run as root. Please use 'sudo'."
 fi
 
-echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, SilentBridge, and LTE Setup Script!${RESET}"
+echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, SilentBridge, LTE, and VPN Setup Script!${RESET}"
 echo -e "${CYAN}----------------------------------------------------------------------------------${RESET}"
 
 # --- User Input for Hotspot Details ---
@@ -74,10 +75,34 @@ if [[ "$INSTALL_LTE_MODULE_CHOICE" == "y" ]]; then
     if [ -z "$SIM_PIN" ]; then
         error_exit "SIM Card PIN cannot be empty if setting up LTE."
     fi
+
+    # --- User Input for WireGuard VPN Setup Option ---
+    echo -e "\n${INFO_EMOJI} ${BLUE}Do you want to set up an automatic WireGuard VPN connection? (y/n): ${RESET}"
+    read -p "Enter 'y' or 'n': " -n 1 -r INSTALL_WIREGUARD_CHOICE
+    echo
+    INSTALL_WIREGUARD_CHOICE=${INSTALL_WIREGUARD_CHOICE,,} # Convert to lowercase
+    if [[ "$INSTALL_WIREGUARD_CHOICE" == "y" ]]; then
+        INSTALL_WIREGUARD=true
+        echo -e "\n${INFO_EMOJI} ${BLUE}Please ensure your WireGuard configuration file is named 'wg0.conf' and placed in '/etc/wireguard/'.${RESET}"
+        read -p "Press Enter to continue once 'wg0.conf' is in place, or 'q' to quit: " CONFIRM_WG
+        if [[ "$CONFIRM_WG" == "q" ]]; then
+            error_exit "WireGuard setup aborted by user."
+        fi
+        if [ ! -f "/etc/wireguard/wg0.conf" ]; then
+            error_exit "WireGuard config file /etc/wireguard/wg0.conf not found. Please create it first."
+        fi
+        echo -e "${SUCCESS_EMOJI} ${GREEN}WireGuard configuration file detected.${RESET}"
+    else
+        INSTALL_WIREGUARD=false
+        echo -e "${INFO_EMOJI} ${BLUE}Skipping WireGuard VPN connection setup.${RESET}"
+    fi
+
 else
     INSTALL_LTE_MODULE=false
-    echo -e "${INFO_EMOJI} ${BLUE}Skipping Huawei LTE connection service setup.${RESET}"
+    INSTALL_WIREGUARD=false # If no LTE, no WireGuard
+    echo -e "${INFO_EMOJI} ${BLUE}Skipping Huawei LTE connection service setup and WireGuard VPN setup.${RESET}"
 fi
+
 
 echo -e "\n${BOLD}${CYAN}--- Starting installation and configuration ---${RESET}\n"
 
@@ -114,12 +139,12 @@ echo -e "${STEP_EMOJI} ${BLUE}4. Configuring /etc/hostapd/hostapd.conf...${RESET
 HOSTAPD_CONF="/etc/hostapd/hostapd.conf"
 
 # Warning: Remove existing wlan0 configurations if they exist
-echo -e "   ${INFO_EMOJI} ${BLUE}Checking for existing wlan0 network configurations...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}Checking for existing wlan0 network configurations...${RESET}"
 if [ -f "/etc/netplan/50-cloud-init.yaml" ]; then
-    echo -e "   ${WARNING_EMOJI} ${YELLOW}Removing /etc/netplan/50-cloud-init.yaml...${RESET}"
-    rm /etc/netplan/50-cloud-init.yaml || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to remove /etc/netplan/50-cloud-init.yaml. Manual intervention might be needed.${RESET}"
+    echo -e "    ${WARNING_EMOJI} ${YELLOW}Removing /etc/netplan/50-cloud-init.yaml...${RESET}"
+    rm /etc/netplan/50-cloud-init.yaml || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to remove /etc/netplan/50-cloud-init.yaml. Manual intervention might be needed.${RESET}"
 fi
-echo -e "   ${INFO_EMOJI} ${BLUE}If you have configured wlan0 manually or via Raspberry Pi Imager, you might need to remove it via 'nmtui'.${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}If you have configured wlan0 manually or via Raspberry Pi Imager, you might need to remove it via 'nmtui'.${RESET}"
 
 
 cat <<EOL > "$HOSTAPD_CONF"
@@ -193,12 +218,12 @@ Name=wlan0
 Address=192.168.200.1/24
 EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $NETWORK_CONF."; fi
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}$NETWORK_CONF created.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}$NETWORK_CONF created.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}Enabling and restarting systemd-networkd...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}Enabling and restarting systemd-networkd...${RESET}"
 systemctl enable systemd-networkd || error_exit "Failed to enable systemd-networkd."
 systemctl restart systemd-networkd || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart systemd-networkd. Check logs or reboot.${RESET}"
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}systemd-networkd enabled and restart attempted.${RESET}\n"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}systemd-networkd enabled and restart attempted.${RESET}\n"
 
 # --- Step 7.1: Configure eth1 for DHCP using /etc/network/interfaces.d/ ---
 echo -e "${STEP_EMOJI} ${BLUE}7.1. Configuring eth1 for DHCP using /etc/network/interfaces.d/...${RESET}"
@@ -211,14 +236,24 @@ auto eth1
     iface eth1 inet dhcp
 EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $ETH1_CONF."; fi
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}$ETH1_CONF created for DHCP.${RESET}"
-echo -e "    ${WARNING_EMOJI} ${YELLOW}Note: You are configuring 'eth1' using '/etc/network/interfaces.d/' while 'wlan0' is managed by 'systemd-networkd'. This is a hybrid setup and requires a reboot to take full effect for 'eth1'. Ensure NetworkManager is disabled to avoid conflicts.${RESET}\n"
+echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH1_CONF created for DHCP.${RESET}"
+echo -e "     ${WARNING_EMOJI} ${YELLOW}Note: You are configuring 'eth1' using '/etc/network/interfaces.d/' while 'wlan0' is managed by 'systemd-networkd'. This is a hybrid setup and requires a reboot to take full effect for 'eth1'. Ensure NetworkManager is disabled to avoid conflicts.${RESET}\n"
 
 # The original script would continue here with Step 8.
 
 # --- Step 8: Reload systemd, enable, and restart services ---
 # Adjusted numbering from previous step
 echo -e "${STEP_EMOJI} ${BLUE}8. Reloading systemd daemon, enabling and restarting services...${RESET}"
+# Remove systemd-networkd-wait-online override here, in case it was applied previously
+# This is relevant because we're moving to a more specific internet connectivity check.
+if [ -f "/etc/systemd/system/systemd-networkd-wait-online.service.d/override.conf" ]; then
+    echo -e "    ${INFO_EMOJI} ${BLUE}Removing previous systemd-networkd-wait-online override...${RESET}"
+    rm /etc/systemd/system/systemd-networkd-wait-online.service.d/override.conf
+    rmdir /etc/systemd/system/systemd-networkd-wait-online.service.d/ 2>/dev/null # Remove dir if empty
+    systemctl daemon-reload # Reload after removal
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}systemd-networkd-wait-online override removed.${RESET}"
+fi
+
 systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
 # Hostapd and isc-dhcp-server restart handled here as well, although already attempted.
 # This ensures they pick up the wlan0 configuration.
@@ -235,7 +270,7 @@ SSHD_CONF="/etc/ssh/sshd_config"
 
 # Backup original sshd_config
 cp "$SSHD_CONF" "${SSHD_CONF}.bak_$(date +%Y%m%d%H%M%S)"
-echo -e "   ${INFO_EMOJI} ${BLUE}Backup of $SSHD_CONF created at ${SSHD_CONF}.bak_$(date +%Y%m%d%H%M%S)${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}Backup of $SSHD_CONF created at ${SSHD_CONF}.bak_$(date +%Y%m%d%H%M%S)${RESET}"
 
 cat <<'EOF' > "$SSHD_CONF"
 Protocol 2
@@ -329,89 +364,89 @@ echo -e "${SUCCESS_EMOJI} ${GREEN}SSH service restart attempted.${RESET}\n"
 # --- Step 11: Install and configure nac_bypass ---
 echo -e "${STEP_EMOJI} ${BLUE}11. Installing and configuring nac_bypass tool...${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}11.1. Installing nac_bypass dependencies...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.1. Installing nac_bypass dependencies...${RESET}"
 # Only install if running something other than Kali Linux, or if not sure, install anyway.
 # This script is for RPi4, which could be running Kali, but ensuring dependencies are there.
 apt-get install -y bridge-utils ethtool macchanger arptables ebtables iptables net-tools tcpdump git || error_exit "Failed to install nac_bypass dependencies."
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}nac_bypass dependencies installed.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}nac_bypass dependencies installed.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}11.2. Loading kernel module br_netfilter...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.2. Loading kernel module br_netfilter...${RESET}"
 modprobe br_netfilter
 if ! lsmod | grep -q br_netfilter; then
-    echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: br_netfilter module not loaded. Manual intervention may be needed.${RESET}"
+    echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: br_netfilter module not loaded. Manual intervention may be needed.${RESET}"
 else
-    echo -e "   ${SUCCESS_EMOJI} ${GREEN}br_netfilter module loaded.${RESET}"
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}br_netfilter module loaded.${RESET}"
 fi
 
-echo -e "   ${INFO_EMOJI} ${BLUE}11.3. Appending br_netfilter to /etc/modules...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.3. Appending br_netfilter to /etc/modules...${RESET}"
 if ! grep -q "br_netfilter" /etc/modules; then
-    echo "br_netfilter" | tee -a /etc/modules || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to append br_netfilter to /etc/modules.${RESET}"
+    echo "br_netfilter" | tee -a /etc/modules || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to append br_netfilter to /etc/modules.${RESET}"
 else
-    echo -e "   ${INFO_EMOJI} ${BLUE}br_netfilter already in /etc/modules.${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}br_netfilter already in /etc/modules.${RESET}"
 fi
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}br_netfilter configuration complete.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}br_netfilter configuration complete.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}11.4. Enabling IP forwarding in /etc/sysctl.conf...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.4. Enabling IP forwarding in /etc/sysctl.conf...${RESET}"
 SYSCTL_CONF="/etc/sysctl.conf"
 if ! grep -q "^net.ipv4.ip_forward = 1" "$SYSCTL_CONF"; then
     echo "net.ipv4.ip_forward = 1" >> "$SYSCTL_CONF"
-    echo -e "   ${INFO_EMOJI} ${BLUE}net.ipv4.ip_forward = 1 added to $SYSCTL_CONF.${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}net.ipv4.ip_forward = 1 added to $SYSCTL_CONF.${RESET}"
 else
     sed -i 's/^#net.ipv4.ip_forward = 1/net.ipv4.ip_forward = 1/' "$SYSCTL_CONF"
-    echo -e "   ${INFO_EMOJI} ${BLUE}net.ipv4.ip_forward = 1 uncommented or ensured in $SYSCTL_CONF.${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}net.ipv4.ip_forward = 1 uncommented or ensured in $SYSCTL_CONF.${RESET}"
 fi
-sysctl -p || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to apply sysctl changes immediately. Reboot will apply.${RESET}"
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}IP forwarding enabled.${RESET}"
+sysctl -p || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to apply sysctl changes immediately. Reboot will apply.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}IP forwarding enabled.${RESET}"
 
 
-echo -e "   ${INFO_EMOJI} ${BLUE}11.5. Cloning nac_bypass repository...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.5. Cloning nac_bypass repository...${RESET}"
 NAC_BYPASS_DIR="$HOME/nac_bypass"
 if [ -d "$NAC_BYPASS_DIR" ]; then
-    echo -e "   ${INFO_EMOJI} ${BLUE}$NAC_BYPASS_DIR already exists. Pulling latest changes...${RESET}"
-    (cd "$NAC_BYPASS_DIR" && git pull) || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for nac_bypass.${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}$NAC_BYPASS_DIR already exists. Pulling latest changes...${RESET}"
+    (cd "$NAC_BYPASS_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for nac_bypass.${RESET}"
 else
     git clone https://github.com/scipag/nac_bypass "$NAC_BYPASS_DIR" || error_exit "Failed to clone nac_bypass repository."
 fi
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}nac_bypass repository cloned/updated.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}nac_bypass repository cloned/updated.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}11.6. Setting permissions for nac_bypass_setup.sh...${RESET}"
-chmod +x "$NAC_BYPASS_DIR/nac_bypass_setup.sh" || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for nac_bypass_setup.sh.${RESET}"
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}Permissions set for nac_bypass_setup.sh.${RESET}\n"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.6. Setting permissions for nac_bypass_setup.sh...${RESET}"
+chmod +x "$NAC_BYPASS_DIR/nac_bypass_setup.sh" || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for nac_bypass_setup.sh.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}Permissions set for nac_bypass_setup.sh.${RESET}\n"
 
 
 # --- Step 12: Install and configure silentbridge ---
 echo -e "${STEP_EMOJI} ${BLUE}12. Installing and configuring silentbridge tool...${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}12.1. Installing silentbridge base dependencies...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}12.1. Installing silentbridge base dependencies...${RESET}"
 apt-get install -y python2-dev git || error_exit "Failed to install silentbridge base dependencies."
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}silentbridge base dependencies installed.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge base dependencies installed.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}12.2. Getting python2 pip...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}12.2. Getting python2 pip...${RESET}"
 pushd /tmp > /dev/null # Change to a temporary directory silently
 wget -q https://bootstrap.pypa.io/pip/2.7/get-pip.py || error_exit "Failed to download get-pip.py."
 python2.7 get-pip.py || error_exit "Failed to install pip for Python 2.7."
 rm get-pip.py
 popd > /dev/null # Go back to original directory silently
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}pip for Python 2.7 installed.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}pip for Python 2.7 installed.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}12.3. Installing virtualenv==20.15.1 for python2.7 venvs...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}12.3. Installing virtualenv==20.15.1 for python2.7 venvs...${RESET}"
 # Changed version to 20.15.1 and removed --break-system-packages as requested.
 pip install virtualenv==20.15.1 --ignore-installed || error_exit "Failed to install virtualenv 20.15.1."
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}virtualenv 20.15.1 installed.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}virtualenv 20.15.1 installed.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}12.4. Cloning silentbridge repository...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}12.4. Cloning silentbridge repository...${RESET}"
 SILENTBRIDGE_DIR="$HOME/silentbridge"
 if [ -d "$SILENTBRIDGE_DIR" ]; then
-    echo -e "   ${INFO_EMOJI} ${BLUE}$SILENTBRIDGE_DIR already exists. Pulling latest changes...${RESET}"
-    (cd "$SILENTBRIDGE_DIR" && git pull) || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for silentbridge.${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}$SILENTBRIDGE_DIR already exists. Pulling latest changes...${RESET}"
+    (cd "$SILENTBRIDGE_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for silentbridge.${RESET}"
 else
     git clone https://github.com/s0lst1c3/silentbridge "$SILENTBRIDGE_DIR" || error_exit "Failed to clone silentbridge repository."
 fi
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}silentbridge repository cloned/updated.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge repository cloned/updated.${RESET}"
 
-echo -e "   ${INFO_EMOJI} ${BLUE}12.5. Creating venv for python2.7 and installing silentbridge dependencies...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}12.5. Creating venv for python2.7 and installing silentbridge dependencies...${RESET}"
 if [ -d "$SILENTBRIDGE_DIR/venv2" ]; then
-    echo -e "   ${INFO_EMOJI} ${BLUE}Existing venv2 detected. Recreating to ensure clean install.${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}Existing venv2 detected. Recreating to ensure clean install.${RESET}"
     rm -rf "$SILENTBRIDGE_DIR/venv2"
 fi
 
@@ -426,7 +461,7 @@ pip install nanpy || error_exit "Failed to install nanpy."
 
 deactivate # Deactivate virtual environment
 popd > /dev/null # Go back to original directory
-echo -e "   ${SUCCESS_EMOJI} ${GREEN}silentbridge and its dependencies installed in venv2 within $SILENTBRIDGE_DIR.${RESET}\n"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge and its dependencies installed in venv2 within $SILENTBRIDGE_DIR.${RESET}\n"
 
 # --- Step 13: Install and configure Huawei LTE Connect Service (Optional) ---
 if [ "$INSTALL_LTE_MODULE" = true ]; then
@@ -434,19 +469,19 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
 
     HUAWEI_HILINK_DIR="/home/$LTE_USERNAME/huawei_hilink_api" # Use provided username for home directory
 
-    echo -e "   ${INFO_EMOJI} ${BLUE}13.1. Cloning huawei_hilink_api repository...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}13.1. Cloning huawei_hilink_api repository...${RESET}"
     if [ -d "$HUAWEI_HILINK_DIR" ]; then
-        echo -e "   ${INFO_EMOJI} ${BLUE}$HUAWEI_HILINK_DIR already exists. Pulling latest changes...${RESET}"
-        (cd "$HUAWEI_HILINK_DIR" && git pull) || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for huawei_hilink_api.${RESET}"
+        echo -e "    ${INFO_EMOJI} ${BLUE}$HUAWEI_HILINK_DIR already exists. Pulling latest changes...${RESET}"
+        (cd "$HUAWEI_HILINK_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for huawei_hilink_api.${RESET}"
     else
         # Ensure the parent directory exists before cloning
         mkdir -p "/home/$LTE_USERNAME" || error_exit "Failed to create /home/$LTE_USERNAME directory."
         git clone https://github.com/zbchristian/huawei_hilink_api "$HUAWEI_HILINK_DIR" || error_exit "Failed to clone huawei_hilink_api repository."
         chown -R "$LTE_USERNAME":"$LTE_USERNAME" "$HUAWEI_HILINK_DIR" # Set ownership
     fi
-    echo -e "   ${SUCCESS_EMOJI} ${GREEN}huawei_hilink_api repository cloned/updated.${RESET}"
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}huawei_hilink_api repository cloned/updated.${RESET}"
 
-    echo -e "   ${INFO_EMOJI} ${BLUE}13.2. Configuring example_huawei_hilink.sh with provided credentials and absolute path...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}13.2. Configuring example_huawei_hilink.sh with provided credentials and absolute path...${RESET}"
     EXAMPLE_SCRIPT="$HUAWEI_HILINK_DIR/example_huawei_hilink.sh"
     if [ ! -f "$EXAMPLE_SCRIPT" ]; then
         error_exit "example_huawei_hilink.sh not found in $HUAWEI_HILINK_DIR."
@@ -464,10 +499,10 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     sed -i "s|^source huawei_hilink_api.sh|source $HUAWEI_HILINK_DIR/huawei_hilink_api.sh|" "$EXAMPLE_SCRIPT" || error_exit "Failed to set absolute source path in example_huawei_hilink.sh."
 
     # Ensure the script is executable
-    chmod +x "$EXAMPLE_SCRIPT" || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for $EXAMPLE_SCRIPT.${RESET}"
-    echo -e "   ${SUCCESS_EMOJI} ${GREEN}example_huawei_hilink.sh configured.${RESET}"
+    chmod +x "$EXAMPLE_SCRIPT" || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for $EXAMPLE_SCRIPT.${RESET}"
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}example_huawei_hilink.sh configured.${RESET}"
 
-    echo -e "   ${INFO_EMOJI} ${BLUE}13.3. Creating systemd service for Huawei LTE connection...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}13.3. Creating systemd service for Huawei LTE connection...${RESET}"
     LTE_SERVICE_FILE="/etc/systemd/system/huawei-lte-connect.service"
     cat <<EOL > "$LTE_SERVICE_FILE"
 [Unit]
@@ -486,15 +521,52 @@ RemainAfterExit=true
 WantedBy=multi-user.target
 EOL
     if [ $? -ne 0 ]; then error_exit "Failed to write $LTE_SERVICE_FILE."; fi
-    echo -e "   ${SUCCESS_EMOJI} ${GREEN}$LTE_SERVICE_FILE created.${RESET}"
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}$LTE_SERVICE_FILE created.${RESET}"
 
-    echo -e "   ${INFO_EMOJI} ${BLUE}13.4. Reloading systemd daemon and enabling Huawei LTE service...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}13.4. Reloading systemd daemon and enabling Huawei LTE service...${RESET}"
     systemctl daemon-reexec || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to re-execute systemd daemon. Reboot recommended.${RESET}"
     systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
     systemctl enable huawei-lte-connect.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable huawei-lte-connect.service. Check logs after reboot.${RESET}"
-    echo -e "   ${SUCCESS_EMOJI} ${GREEN}Huawei LTE service enabled.${RESET}\n"
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}Huawei LTE service enabled.${RESET}\n"
+
+    # --- Step 14: Install and Configure WireGuard VPN (Optional) ---
+    if [ "$INSTALL_WIREGUARD" = true ]; then
+        echo -e "${STEP_EMOJI} ${BLUE}14. Installing and configuring WireGuard VPN...${RESET}"
+
+        echo -e "    ${INFO_EMOJI} ${BLUE}14.1. Installing WireGuard package...${RESET}"
+        apt-get install -y wireguard || error_exit "Failed to install wireguard."
+        echo -e "    ${SUCCESS_EMOJI} ${GREEN}WireGuard installed.${RESET}"
+
+        echo -e "    ${INFO_EMOJI} ${BLUE}14.2. Creating systemd drop-in for wg-quick@wg0.service for internet connectivity check...${RESET}"
+        WG_DROPIN_DIR="/etc/systemd/system/wg-quick@wg0.service.d"
+        WG_DROPIN_FILE="$WG_DROPIN_DIR/wait-for-internet.conf"
+        mkdir -p "$WG_DROPIN_DIR" || error_exit "Failed to create WireGuard drop-in directory."
+
+        cat <<'EOL' > "$WG_DROPIN_FILE"
+[Unit]
+# Ensure WireGuard starts AFTER the LTE connection service has initiated
+After=huawei-lte-connect.service
+Requires=huawei-lte-connect.service
+
+[Service]
+# This ExecStartPre command will run BEFORE wg-quick up wg0
+# It continuously pings a reliable public IP via eth2 until successful,
+# indicating actual internet connectivity through the LTE modem.
+ExecStartPre=/bin/bash -c 'echo "Waiting for internet connectivity on eth2 for WireGuard..."; while ! ping -c 1 -I eth2 -W 3 8.8.8.8 > /dev/null 2>&1; do echo "eth2 not connected to internet, retrying in 5s..."; sleep 5; done; echo "eth2 is online, starting WireGuard."'
+EOL
+        if [ $? -ne 0 ]; then error_exit "Failed to write $WG_DROPIN_FILE."; fi
+        echo -e "    ${SUCCESS_EMOJI} ${GREEN}$WG_DROPIN_FILE created.${RESET}"
+
+        echo -e "    ${INFO_EMOJI} ${BLUE}14.3. Reloading systemd daemon and enabling wg-quick@wg0.service...${RESET}"
+        systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
+        systemctl enable wg-quick@wg0.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable wg-quick@wg0.service. Check logs after reboot.${RESET}"
+        echo -e "    ${SUCCESS_EMOJI} ${GREEN}wg-quick@wg0.service enabled.${RESET}\n"
+    else
+        echo -e "${INFO_EMOJI} ${BLUE}Skipping WireGuard VPN setup as requested. Step 14 omitted.${RESET}\n"
+    fi # End of WireGuard setup conditional block
+
 else
-    echo -e "${INFO_EMOJI} ${BLUE}Skipping LTE module setup as requested. Step 13 omitted.${RESET}\n"
+    echo -e "${INFO_EMOJI} ${BLUE}Skipping LTE module setup and WireGuard VPN setup as requested. Steps 13 & 14 omitted.${RESET}\n"
 fi # End of LTE module setup conditional block
 
 
@@ -514,23 +586,23 @@ echo -e "${INFO_EMOJI} ${BLUE}To use it, follow these steps after reboot and con
 echo -e "${STEP_EMOJI} ${MAGENTA}1. Connect the switch to eth0 (native LAN interface of RPi4).${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}2. Connect victim (e.g. printer) to eth1 (external USB LAN adapter).${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}3. Change directory to the nac_bypass tool:${RESET}"
-echo -e "   ${MAGENTA}   cd ${BOLD}$NAC_BYPASS_DIR${RESET}"
+echo -e "    ${MAGENTA}    cd ${BOLD}$NAC_BYPASS_DIR${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}4. Start the NAC bypass (replace eth0 and eth1 with your actual interface names if different):${RESET}"
-echo -e "   ${MAGENTA}   sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1${RESET}"
-echo -e "   ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it completes, you can proceed with your network scan.${RESET}"
-echo -e "   ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RESET}"
-echo -e "   ${MAGENTA}   ./Responder.py -I br0 -e victim.ip${RESET}"
-echo -e "   ${INFO_EMOJI} ${BLUE}You can inspect iptables rules with: ${BOLD}iptables -t nat -L${RESET}\n"
+echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it completes, you can proceed with your network scan.${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RESET}"
+echo -e "    ${MAGENTA}    ./Responder.py -I br0 -e victim.ip${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}You can inspect iptables rules with: ${BOLD}iptables -t nat -L${RESET}\n"
 
 echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
 echo -e "${BOLD}${CYAN}SilentBridge Tool Information:${RESET}"
 echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
 echo -e "${INFO_EMOJI} ${BLUE}The 'silentbridge' tool has been installed in: ${BOLD}$SILENTBRIDGE_DIR${RESET}"
 echo -e "${INFO_EMOJI} ${BLUE}To test run silentbridge, navigate to its directory and use the python2 virtual environment:${RESET}"
-echo -e "   ${MAGENTA}   cd ${BOLD}$SILENTBRIDGE_DIR${RESET}"
-echo -e "   ${MAGENTA}   source venv2/bin/activate${RESET}"
-echo -e "   ${MAGENTA}   python2 ./silentbridge${RESET}"
-echo -e "   ${MAGENTA}   deactivate${RESET}"
+echo -e "    ${MAGENTA}    cd ${BOLD}$SILENTBRIDGE_DIR${RESET}"
+echo -e "    ${MAGENTA}    source venv2/bin/activate${RESET}"
+echo -e "    ${MAGENTA}    python2 ./silentbridge${RESET}"
+echo -e "    ${MAGENTA}    deactivate${RESET}"
 echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}\n"
 
 if [ "$INSTALL_LTE_MODULE" = true ]; then
@@ -542,6 +614,13 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${INFO_EMOJI} ${BLUE}A systemd service named '${BOLD}huawei-lte-connect.service${RESET}${BLUE}' has been created to automatically start the LTE connection on boot.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}It will run the script '${BOLD}$HUAWEI_HILINK_DIR/example_huawei_hilink.sh on${RESET}${BLUE}' as user '${BOLD}${LTE_USERNAME}${RESET}${BLUE}'.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}After reboot, the LTE modem should attempt to connect automatically.${RESET}"
-    echo -e "${INFO_EMOJI} ${BLUE}You can check the service status with: ${BOLD}sudo systemctl status huawei-lte-connect.service${RESET}\n"
+    echo -e "${INFO_EMOJI} ${BLUE}You can check the service status with: ${BOLD}sudo systemctl status huawei-lte-connect.service${RESET}"
+
+    if [ "$INSTALL_WIREGUARD" = true ]; then
+        echo -e "${INFO_EMOJI} ${BLUE}The WireGuard VPN (${BOLD}wg0${RESET}${BLUE}) has been configured to start automatically AFTER the LTE connection has stable internet access via ${BOLD}eth2${RESET}${BLUE}.${RESET}"
+        echo -e "${INFO_EMOJI} ${BLUE}You must place your WireGuard configuration file as ${BOLD}/etc/wireguard/wg0.conf${RESET}${BLUE} for it to work.${RESET}"
+        echo -e "${INFO_EMOJI} ${BLUE}You can check the WireGuard service status with: ${BOLD}sudo systemctl status wg-quick@wg0.service${RESET}"
+        echo -e "${INFO_EMOJI} ${BLUE}And the WireGuard tunnel status with: ${BOLD}sudo wg${RESET}\n"
+    fi
     echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
 fi
