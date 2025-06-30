@@ -351,7 +351,7 @@ KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-grou
 #PubkeyAcceptedKeyTypes=+ssh-rsa
 
 # SSH Custom Network Configuration (Internal)
-Match Address 192.168.200.0/24
+Match Address 192.168.200.0/24#,100.64.0.0/10
     PasswordAuthentication yes
 EOF
 if [ $? -ne 0 ]; then error_exit "Failed to write $SSHD_CONF."; fi
