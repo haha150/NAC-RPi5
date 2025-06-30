@@ -478,6 +478,7 @@ After=network.target
 Type=oneshot
 ExecStartPre=/bin/sleep 60
 ExecStart=/bin/bash /home/${LTE_USERNAME}/huawei_hilink_api/example_huawei_hilink.sh on
+ExecStop=/bin/bash /home/${LTE_USERNAME}/huawei_hilink_api/example_huawei_hilink.sh off
 User=${LTE_USERNAME}
 RemainAfterExit=true
 
