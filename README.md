@@ -75,13 +75,19 @@ In case you make use of an LTE connection, you can store your WireGuard client p
 >
 > You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entry in the SSH config regarding `Match Address ...`.
 
-### 5. NAC Bypass
+### 5. Adjustments
+
+1. Re-check the OpenSSH configuration at `/etc/ssh/sshd_config`.
+2. Re-check the Huawei SIM PIN at `/home/<your-username>/huawei_hilink_api/example_huawei_hilink.sh`.
+3. Place your Wireguard client profile at `/etc/wireguard/wg0.conf`.
+
+### 6. NAC Bypass
 
 Use the tools `nac_bypass` and `silentbridge` to your advantage.
 
 May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
 
-#### 5.1 - nac_bypass
+#### 6.1 - nac_bypass
 
 [README](https://github.com/scipag/nac_bypass)
 
@@ -98,7 +104,7 @@ Then start the nac bypass:
 # afterwards, you can proceed and for instance do an nmap scan on the network
 ````
 
-#### 5.2 - silentbridge
+#### 6.2 - silentbridge
 
 [README](https://github.com/s0lst1c3/silentbridge/wiki)
 
