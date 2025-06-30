@@ -3,7 +3,7 @@
 # This script automates the setup of a Wi-Fi hotspot and DHCP server on a Raspberry Pi 4,
 # based on the guide from https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/
 # It also configures SSH for enhanced security, installs the nac_bypass tool,
-# and installs the silentbridge tool.
+# installs the silentbridge tool, and sets up a Huawei LTE connection service.
 
 # ANSI Color Codes
 RED='\033[0;31m'
@@ -33,7 +33,7 @@ if [[ $EUID -ne 0 ]]; then
     error_exit "This script must be run as root. Please use 'sudo'."
 fi
 
-echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, and SilentBridge Setup Script!${RESET}"
+echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, SilentBridge, and LTE Setup Script!${RESET}"
 echo -e "${CYAN}----------------------------------------------------------------------------------${RESET}"
 
 # --- User Input for Hotspot Details ---
@@ -47,6 +47,36 @@ read -s -p "Enter the desired Wi-Fi Password (WPA-PSK, min 8 characters): " WIFI
 echo
 if [ -z "$WIFI_PASSWORD" ] || [ ${#WIFI_PASSWORD} -lt 8 ]; then
     error_exit "Wi-Fi Password cannot be empty and must be at least 8 characters long."
+fi
+
+# --- User Input for LTE Module Setup Option ---
+echo -e "\n${INFO_EMOJI} ${BLUE}Do you want to set up the Huawei LTE connection service? (y/n): ${RESET}"
+read -p "Enter 'y' or 'n': " -n 1 -r INSTALL_LTE_MODULE_CHOICE
+echo
+INSTALL_LTE_MODULE_CHOICE=${INSTALL_LTE_MODULE_CHOICE,,} # Convert to lowercase
+if [[ "$INSTALL_LTE_MODULE_CHOICE" == "y" ]]; then
+    INSTALL_LTE_MODULE=true
+    # --- User Input for LTE Service Username ---
+    echo -e "\n${INFO_EMOJI} ${BLUE}Please provide the username for the Huawei LTE connection service:${RESET}"
+    read -p "Enter the username (e.g., pi, yourusername): " LTE_USERNAME
+    if [ -z "$LTE_USERNAME" ]; then
+        error_exit "LTE service username cannot be empty."
+    fi
+    if ! id "$LTE_USERNAME" &>/dev/null; then
+        error_exit "User '$LTE_USERNAME' does not exist. Please create the user or provide an existing one."
+    fi
+
+    # --- User Input for Huawei LTE Password and SIM PIN ---
+    echo -e "\n${INFO_EMOJI} ${BLUE}Please provide details for your Huawei LTE Modem:${RESET}"
+    read -s -p "Enter the Huawei LTE Modem Password (leave empty for default): " HUAWEI_MODEM_PASSWORD
+    echo
+    read -p "Enter the SIM Card PIN (required for connection): " SIM_PIN
+    if [ -z "$SIM_PIN" ]; then
+        error_exit "SIM Card PIN cannot be empty if setting up LTE."
+    fi
+else
+    INSTALL_LTE_MODULE=false
+    echo -e "${INFO_EMOJI} ${BLUE}Skipping Huawei LTE connection service setup.${RESET}"
 fi
 
 echo -e "\n${BOLD}${CYAN}--- Starting installation and configuration ---${RESET}\n"
@@ -159,8 +189,7 @@ cat <<EOL > "$NETWORK_CONF"
 [Match]
 Name=wlan0
 
-[Network]
-Address=192.168.200.1/24
+[Network]<br>Address=192.168.200.1/24
 EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $NETWORK_CONF."; fi
 echo -e "   ${SUCCESS_EMOJI} ${GREEN}$NETWORK_CONF created.${RESET}"
@@ -398,6 +427,70 @@ deactivate # Deactivate virtual environment
 popd > /dev/null # Go back to original directory
 echo -e "   ${SUCCESS_EMOJI} ${GREEN}silentbridge and its dependencies installed in venv2 within $SILENTBRIDGE_DIR.${RESET}\n"
 
+# --- Step 13: Install and configure Huawei LTE Connect Service (Optional) ---
+if [ "$INSTALL_LTE_MODULE" = true ]; then
+    echo -e "${STEP_EMOJI} ${BLUE}13. Installing and configuring Huawei LTE Connect Service...${RESET}"
+
+    HUAWEI_HILINK_DIR="/home/$LTE_USERNAME/huawei_hilink_api" # Use provided username for home directory
+
+    echo -e "   ${INFO_EMOJI} ${BLUE}13.1. Cloning huawei_hilink_api repository...${RESET}"
+    if [ -d "$HUAWEI_HILINK_DIR" ]; then
+        echo -e "   ${INFO_EMOJI} ${BLUE}$HUAWEI_HILINK_DIR already exists. Pulling latest changes...${RESET}"
+        (cd "$HUAWEI_HILINK_DIR" && git pull) || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for huawei_hilink_api.${RESET}"
+    else
+        # Ensure the parent directory exists before cloning
+        mkdir -p "/home/$LTE_USERNAME" || error_exit "Failed to create /home/$LTE_USERNAME directory."
+        git clone https://github.com/zbchristian/huawei_hilink_api "$HUAWEI_HILINK_DIR" || error_exit "Failed to clone huawei_hilink_api repository."
+        chown -R "$LTE_USERNAME":"$LTE_USERNAME" "$HUAWEI_HILINK_DIR" # Set ownership
+    fi
+    echo -e "   ${SUCCESS_EMOJI} ${GREEN}huawei_hilink_api repository cloned/updated.${RESET}"
+
+    echo -e "   ${INFO_EMOJI} ${BLUE}13.2. Configuring example_huawei_hilink.sh with provided credentials...${RESET}"
+    EXAMPLE_SCRIPT="$HUAWEI_HILINK_DIR/example_huawei_hilink.sh"
+    if [ ! -f "$EXAMPLE_SCRIPT" ]; then
+        error_exit "example_huawei_hilink.sh not found in $HUAWEI_HILINK_DIR."
+    fi
+
+    # Escape password and PIN for sed
+    ESCAPED_HUAWEI_MODEM_PASSWORD=$(printf '%s\n' "$HUAWEI_MODEM_PASSWORD" | sed -e 's/[\/&]/\\&/g')
+    ESCAPED_SIM_PIN=$(printf '%s\n' "$SIM_PIN" | sed -e 's/[\/&]/\\&/g')
+
+    # Replace hilink_password and hilink_pin in the script
+    sed -i "s/^hilink_password=\"1234Secret\"/hilink_password=\"$ESCAPED_HUAWEI_MODEM_PASSWORD\"/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_password in example_huawei_hilink.sh."
+    sed -i "s/^hilink_pin=\"1234\"/hilink_pin=\"$ESCAPED_SIM_PIN\"/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_pin in example_huawei_hilink.sh."
+
+    # Ensure the script is executable
+    chmod +x "$EXAMPLE_SCRIPT" || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for $EXAMPLE_SCRIPT.${RESET}"
+    echo -e "   ${SUCCESS_EMOJI} ${GREEN}example_huawei_hilink.sh configured.${RESET}"
+
+    echo -e "   ${INFO_EMOJI} ${BLUE}13.3. Creating systemd service for Huawei LTE connection...${RESET}"
+    LTE_SERVICE_FILE="/etc/systemd/system/huawei-lte-connect.service"
+    cat <<EOL > "$LTE_SERVICE_FILE"
+[Unit]
+Description=Start Huawei LTE connection
+After=network.target
+
+[Service]
+ExecStart=/bin/bash /home/${LTE_USERNAME}/huawei_hilink_api/example_huawei_hilink.sh on
+User=${LTE_USERNAME}
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    if [ $? -ne 0 ]; then error_exit "Failed to write $LTE_SERVICE_FILE."; fi
+    echo -e "   ${SUCCESS_EMOJI} ${GREEN}$LTE_SERVICE_FILE created.${RESET}"
+
+    echo -e "   ${INFO_EMOJI} ${BLUE}13.4. Reloading systemd daemon and enabling Huawei LTE service...${RESET}"
+    systemctl daemon-reexec || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to re-execute systemd daemon. Reboot recommended.${RESET}"
+    systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
+    systemctl enable huawei-lte-connect.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable huawei-lte-connect.service. Check logs after reboot.${RESET}"
+    echo -e "   ${SUCCESS_EMOJI} ${GREEN}Huawei LTE service enabled.${RESET}\n"
+else
+    echo -e "${INFO_EMOJI} ${BLUE}Skipping LTE module setup as requested. Step 13 omitted.${RESET}\n"
+fi # End of LTE module setup conditional block
+
+
 echo -e "${BOLD}${GREEN}----------------------------------------------------------------${RESET}"
 echo -e "${BOLD}${GREEN}Setup complete!${RESET}"
 echo -e "${BOLD}${GREEN}----------------------------------------------------------------${RESET}"
@@ -431,4 +524,17 @@ echo -e "   ${MAGENTA}   cd ${BOLD}$SILENTBRIDGE_DIR${RESET}"
 echo -e "   ${MAGENTA}   source venv2/bin/activate${RESET}"
 echo -e "   ${MAGENTA}   python2 ./silentbridge${RESET}"
 echo -e "   ${MAGENTA}   deactivate${RESET}"
-echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
+echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}\n"
+
+if [ "$INSTALL_LTE_MODULE" = true ]; then
+    echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
+    echo -e "${BOLD}${CYAN}Huawei LTE Connect Service Information:${RESET}"
+    echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}The 'huawei_hilink_api' repository has been cloned to: ${BOLD}$HUAWEI_HILINK_DIR${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}The 'example_huawei_hilink.sh' script has been updated with your provided credentials.${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}A systemd service named '${BOLD}huawei-lte-connect.service${RESET}${BLUE}' has been created to automatically start the LTE connection on boot.${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}It will run the script '${BOLD}$HUAWEI_HILINK_DIR/example_huawei_hilink.sh on${RESET}${BLUE}' as user '${BOLD}${LTE_USERNAME}${RESET}${BLUE}'.${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}After reboot, the LTE modem should attempt to connect automatically.${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}You can check the service status with: ${BOLD}sudo systemctl status huawei-lte-connect.service${RESET}\n"
+    echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
+fi
