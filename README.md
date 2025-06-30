@@ -60,9 +60,20 @@ A DHCP server will be running, handing out client IP addresses from the range `1
 
 ### 4. SSH Access
 
+#### Via WiFi Hotspot
+
 Once connected to the wifi hotspot, you can access the RPi4's SSH network service on TCP/22.
 
 The RPi4 will have the IP address `192.168.200.1`. Just connect with your favorite SSH client (e.g. MobaXTerm).
+
+#### Via LTE + VPN
+
+In case you make use of an LTE connection, you can store your WireGuard client profile at `/etc/wireguard/wg0.conf` and start a VPN connection via `sudo wg-quick up wg0`. Then, the RPi4 will be in the same VPN network as your operators (pentesters, red teamers etc.). This allows remote access into a compromised corpoerate's network.
+
+>[!WARNING]
+> SSH uses public key authentication for external networks per default. No password auth.
+>
+> You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entry in the SSH config regarding `Match Address ...`.
 
 ### 5. NAC Bypass
 
