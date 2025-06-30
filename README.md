@@ -83,7 +83,7 @@ In case you make use of an LTE connection, you can store your WireGuard client p
 
 ### 6. NAC Bypass
 
-Use the tools `nac_bypass` and `silentbridge` to your advantage.
+Use the tools `nac_bypass` and `silentbridge` at `/root/` to your advantage.
 
 May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
 
