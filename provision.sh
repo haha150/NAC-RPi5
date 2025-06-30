@@ -189,7 +189,8 @@ cat <<EOL > "$NETWORK_CONF"
 [Match]
 Name=wlan0
 
-[Network]<br>Address=192.168.200.1/24
+[Network]
+Address=192.168.200.1/24
 EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $NETWORK_CONF."; fi
 echo -e "   ${SUCCESS_EMOJI} ${GREEN}$NETWORK_CONF created.${RESET}"
@@ -445,7 +446,7 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     fi
     echo -e "   ${SUCCESS_EMOJI} ${GREEN}huawei_hilink_api repository cloned/updated.${RESET}"
 
-    echo -e "   ${INFO_EMOJI} ${BLUE}13.2. Configuring example_huawei_hilink.sh with provided credentials...${RESET}"
+    echo -e "   ${INFO_EMOJI} ${BLUE}13.2. Configuring example_huawei_hilink.sh with provided credentials and absolute path...${RESET}"
     EXAMPLE_SCRIPT="$HUAWEI_HILINK_DIR/example_huawei_hilink.sh"
     if [ ! -f "$EXAMPLE_SCRIPT" ]; then
         error_exit "example_huawei_hilink.sh not found in $HUAWEI_HILINK_DIR."
@@ -458,6 +459,9 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     # Replace hilink_password and hilink_pin in the script
     sed -i "s/^hilink_password=\"1234Secret\"/hilink_password=\"$ESCAPED_HUAWEI_MODEM_PASSWORD\"/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_password in example_huawei_hilink.sh."
     sed -i "s/^hilink_pin=\"1234\"/hilink_pin=\"$ESCAPED_SIM_PIN\"/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_pin in example_huawei_hilink.sh."
+
+    # Replace the relative source path with the absolute path
+    sed -i "s|^source huawei_hilink_api.sh|source $HUAWEI_HILINK_DIR/huawei_hilink_api.sh|" "$EXAMPLE_SCRIPT" || error_exit "Failed to set absolute source path in example_huawei_hilink.sh."
 
     # Ensure the script is executable
     chmod +x "$EXAMPLE_SCRIPT" || echo -e "   ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for $EXAMPLE_SCRIPT.${RESET}"
@@ -531,7 +535,7 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${BOLD}${CYAN}Huawei LTE Connect Service Information:${RESET}"
     echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}The 'huawei_hilink_api' repository has been cloned to: ${BOLD}$HUAWEI_HILINK_DIR${RESET}"
-    echo -e "${INFO_EMOJI} ${BLUE}The 'example_huawei_hilink.sh' script has been updated with your provided credentials.${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}The 'example_huawei_hilink.sh' script has been updated with your provided credentials and absolute paths.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}A systemd service named '${BOLD}huawei-lte-connect.service${RESET}${BLUE}' has been created to automatically start the LTE connection on boot.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}It will run the script '${BOLD}$HUAWEI_HILINK_DIR/example_huawei_hilink.sh on${RESET}${BLUE}' as user '${BOLD}${LTE_USERNAME}${RESET}${BLUE}'.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}After reboot, the LTE modem should attempt to connect automatically.${RESET}"
