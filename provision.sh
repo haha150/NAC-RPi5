@@ -349,9 +349,13 @@ KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-grou
 # Allow older public key types
 #PubkeyAcceptedKeyTypes=+ssh-rsa
 
-# SSH Custom Network Configuration (Internal)
-#Match Address 192.168.200.0/24,100.64.0.0/10
-#    PasswordAuthentication yes
+# SSH Custom Network Configuration (remove after setup)
+Match Address 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
+    PasswordAuthentication yes
+
+# SSH Custom Network Configuration (hotspot or vpn)
+Match Address 192.168.200.0/24,100.64.0.0/10
+    PasswordAuthentication yes    
 EOF
 if [ $? -ne 0 ]; then error_exit "Failed to write $SSHD_CONF."; fi
 echo -e "${SUCCESS_EMOJI} ${GREEN}$SSHD_CONF overwritten successfully.${RESET}\n"
