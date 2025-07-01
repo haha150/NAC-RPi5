@@ -34,7 +34,7 @@ if [[ $EUID -ne 0 ]]; then
     error_exit "This script must be run as root. Please use 'sudo'."
 fi
 
-echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, SilentBridge, LTE, and VPN Setup Script!${RESET}"
+echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, LTE, and VPN Setup Script!${RESET}"
 echo -e "${CYAN}----------------------------------------------------------------------------------${RESET}"
 
 # --- User Input for Hotspot Details ---
@@ -412,63 +412,13 @@ echo -e "    ${INFO_EMOJI} ${BLUE}11.6. Setting permissions for nac_bypass_setup
 chmod +x "$NAC_BYPASS_DIR/nac_bypass_setup.sh" || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for nac_bypass_setup.sh.${RESET}"
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}Permissions set for nac_bypass_setup.sh.${RESET}\n"
 
-
-# --- Step 12: Install and configure silentbridge ---
-echo -e "${STEP_EMOJI} ${BLUE}12. Installing and configuring silentbridge tool...${RESET}"
-
-echo -e "    ${INFO_EMOJI} ${BLUE}12.1. Installing silentbridge base dependencies...${RESET}"
-apt-get install -y python2-dev git || error_exit "Failed to install silentbridge base dependencies."
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge base dependencies installed.${RESET}"
-
-echo -e "    ${INFO_EMOJI} ${BLUE}12.2. Getting python2 pip...${RESET}"
-pushd /tmp > /dev/null # Change to a temporary directory silently
-wget -q https://bootstrap.pypa.io/pip/2.7/get-pip.py || error_exit "Failed to download get-pip.py."
-python2.7 get-pip.py || error_exit "Failed to install pip for Python 2.7."
-rm get-pip.py
-popd > /dev/null # Go back to original directory silently
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}pip for Python 2.7 installed.${RESET}"
-
-echo -e "    ${INFO_EMOJI} ${BLUE}12.3. Installing virtualenv==20.15.1 for python2.7 venvs...${RESET}"
-# Changed version to 20.15.1 and removed --break-system-packages as requested.
-pip install virtualenv==20.15.1 --ignore-installed --break-system-packages || error_exit "Failed to install virtualenv 20.15.1."
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}virtualenv 20.15.1 installed.${RESET}"
-
-echo -e "    ${INFO_EMOJI} ${BLUE}12.4. Cloning silentbridge repository...${RESET}"
-SILENTBRIDGE_DIR="$HOME/silentbridge"
-if [ -d "$SILENTBRIDGE_DIR" ]; then
-    echo -e "    ${INFO_EMOJI} ${BLUE}$SILENTBRIDGE_DIR already exists. Pulling latest changes...${RESET}"
-    (cd "$SILENTBRIDGE_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for silentbridge.${RESET}"
-else
-    git clone https://github.com/s0lst1c3/silentbridge "$SILENTBRIDGE_DIR" || error_exit "Failed to clone silentbridge repository."
-fi
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge repository cloned/updated.${RESET}"
-
-echo -e "    ${INFO_EMOJI} ${BLUE}12.5. Creating venv for python2.7 and installing silentbridge dependencies...${RESET}"
-if [ -d "$SILENTBRIDGE_DIR/venv2" ]; then
-    echo -e "    ${INFO_EMOJI} ${BLUE}Existing venv2 detected. Recreating to ensure clean install.${RESET}"
-    rm -rf "$SILENTBRIDGE_DIR/venv2"
-fi
-
-pushd "$SILENTBRIDGE_DIR" > /dev/null || error_exit "Failed to change directory to $SILENTBRIDGE_DIR."
-virtualenv -p "$(which python2)" venv2 || error_exit "Failed to create python2 virtual environment."
-source venv2/bin/activate || error_exit "Failed to activate venv2."
-
-# Install dependencies within the virtual environment
-pip install scapy==2.4.3 --ignore-installed || error_exit "Failed to install scapy."
-pip install netifaces || error_exit "Failed to install netifaces."
-pip install nanpy || error_exit "Failed to install nanpy."
-
-deactivate # Deactivate virtual environment
-popd > /dev/null # Go back to original directory
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge and its dependencies installed in venv2 within $SILENTBRIDGE_DIR.${RESET}\n"
-
-# --- Step 13: Install and configure Huawei LTE Connect Service (Optional) ---
+# --- Step 12: Install and configure Huawei LTE Connect Service (Optional) ---
 if [ "$INSTALL_LTE_MODULE" = true ]; then
-    echo -e "${STEP_EMOJI} ${BLUE}13. Installing and configuring Huawei LTE Connect Service...${RESET}"
+    echo -e "${STEP_EMOJI} ${BLUE}12. Installing and configuring Huawei LTE Connect Service...${RESET}"
 
     HUAWEI_HILINK_DIR="/home/$LTE_USERNAME/huawei_hilink_api" # Use provided username for home directory
 
-    echo -e "    ${INFO_EMOJI} ${BLUE}13.1. Cloning huawei_hilink_api repository...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}12.1. Cloning huawei_hilink_api repository...${RESET}"
     if [ -d "$HUAWEI_HILINK_DIR" ]; then
         echo -e "    ${INFO_EMOJI} ${BLUE}$HUAWEI_HILINK_DIR already exists. Pulling latest changes...${RESET}"
         (cd "$HUAWEI_HILINK_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for huawei_hilink_api.${RESET}"
@@ -480,7 +430,7 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     fi
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}huawei_hilink_api repository cloned/updated.${RESET}"
 
-    echo -e "    ${INFO_EMOJI} ${BLUE}13.2. Configuring example_huawei_hilink.sh with provided credentials and absolute path...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}12.2. Configuring example_huawei_hilink.sh with provided credentials and absolute path...${RESET}"
     EXAMPLE_SCRIPT="$HUAWEI_HILINK_DIR/example_huawei_hilink.sh"
     if [ ! -f "$EXAMPLE_SCRIPT" ]; then
         error_exit "example_huawei_hilink.sh not found in $HUAWEI_HILINK_DIR."
@@ -501,7 +451,7 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     chmod +x "$EXAMPLE_SCRIPT" || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for $EXAMPLE_SCRIPT.${RESET}"
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}example_huawei_hilink.sh configured.${RESET}"
 
-    echo -e "    ${INFO_EMOJI} ${BLUE}13.3. Creating systemd service for Huawei LTE connection...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}12.3. Creating systemd service for Huawei LTE connection...${RESET}"
     LTE_SERVICE_FILE="/etc/systemd/system/huawei-lte-connect.service"
     cat <<EOL > "$LTE_SERVICE_FILE"
 [Unit]
@@ -522,21 +472,21 @@ EOL
     if [ $? -ne 0 ]; then error_exit "Failed to write $LTE_SERVICE_FILE."; fi
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}$LTE_SERVICE_FILE created.${RESET}"
 
-    echo -e "    ${INFO_EMOJI} ${BLUE}13.4. Reloading systemd daemon and enabling Huawei LTE service...${RESET}"
+    echo -e "    ${INFO_EMOJI} ${BLUE}12.4. Reloading systemd daemon and enabling Huawei LTE service...${RESET}"
     systemctl daemon-reexec || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to re-execute systemd daemon. Reboot recommended.${RESET}"
     systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
     systemctl enable huawei-lte-connect.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable huawei-lte-connect.service. Check logs after reboot.${RESET}"
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}Huawei LTE service enabled.${RESET}\n"
 
-    # --- Step 14: Install and Configure WireGuard VPN (Optional) ---
+    # --- Step 13: Install and Configure WireGuard VPN (Optional) ---
     if [ "$INSTALL_WIREGUARD" = true ]; then
-        echo -e "${STEP_EMOJI} ${BLUE}14. Installing and configuring WireGuard VPN...${RESET}"
+        echo -e "${STEP_EMOJI} ${BLUE}13. Installing and configuring WireGuard VPN...${RESET}"
 
-        echo -e "    ${INFO_EMOJI} ${BLUE}14.1. Installing WireGuard package...${RESET}"
+        echo -e "    ${INFO_EMOJI} ${BLUE}13.1. Installing WireGuard package...${RESET}"
         apt-get install -y wireguard || error_exit "Failed to install wireguard."
         echo -e "    ${SUCCESS_EMOJI} ${GREEN}WireGuard installed.${RESET}"
 
-        echo -e "    ${INFO_EMOJI} ${BLUE}14.2. Creating systemd drop-in for wg-quick@wg0.service for internet connectivity check...${RESET}"
+        echo -e "    ${INFO_EMOJI} ${BLUE}13.2. Creating systemd drop-in for wg-quick@wg0.service for internet connectivity check...${RESET}"
         WG_DROPIN_DIR="/etc/systemd/system/wg-quick@wg0.service.d"
         WG_DROPIN_FILE="$WG_DROPIN_DIR/wait-for-internet.conf"
         mkdir -p "$WG_DROPIN_DIR" || error_exit "Failed to create WireGuard drop-in directory."
@@ -556,7 +506,7 @@ EOL
         if [ $? -ne 0 ]; then error_exit "Failed to write $WG_DROPIN_FILE."; fi
         echo -e "    ${SUCCESS_EMOJI} ${GREEN}$WG_DROPIN_FILE created.${RESET}"
 
-        echo -e "    ${INFO_EMOJI} ${BLUE}14.3. Reloading systemd daemon and enabling wg-quick@wg0.service...${RESET}"
+        echo -e "    ${INFO_EMOJI} ${BLUE}13.3. Reloading systemd daemon and enabling wg-quick@wg0.service...${RESET}"
         systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
         systemctl enable wg-quick@wg0.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable wg-quick@wg0.service. Check logs after reboot.${RESET}"
         echo -e "    ${SUCCESS_EMOJI} ${GREEN}wg-quick@wg0.service enabled.${RESET}\n"
@@ -592,17 +542,6 @@ echo -e "    ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it c
 echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RESET}"
 echo -e "    ${MAGENTA}    ./Responder.py -I br0 -e victim.ip${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}You can inspect iptables rules with: ${BOLD}iptables -t nat -L${RESET}\n"
-
-echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
-echo -e "${BOLD}${CYAN}SilentBridge Tool Information:${RESET}"
-echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
-echo -e "${INFO_EMOJI} ${BLUE}The 'silentbridge' tool has been installed in: ${BOLD}$SILENTBRIDGE_DIR${RESET}"
-echo -e "${INFO_EMOJI} ${BLUE}To test run silentbridge, navigate to its directory and use the python2 virtual environment:${RESET}"
-echo -e "    ${MAGENTA}    cd ${BOLD}$SILENTBRIDGE_DIR${RESET}"
-echo -e "    ${MAGENTA}    source venv2/bin/activate${RESET}"
-echo -e "    ${MAGENTA}    python2 ./silentbridge${RESET}"
-echo -e "    ${MAGENTA}    deactivate${RESET}"
-echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}\n"
 
 if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
