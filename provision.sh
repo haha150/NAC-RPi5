@@ -430,7 +430,7 @@ echo -e "    ${SUCCESS_EMOJI} ${GREEN}pip for Python 2.7 installed.${RESET}"
 
 echo -e "    ${INFO_EMOJI} ${BLUE}12.3. Installing virtualenv==20.15.1 for python2.7 venvs...${RESET}"
 # Changed version to 20.15.1 and removed --break-system-packages as requested.
-pip install virtualenv==20.15.1 --ignore-installed || error_exit "Failed to install virtualenv 20.15.1."
+pip install virtualenv==20.15.1 --ignore-installed --break-system-packages || error_exit "Failed to install virtualenv 20.15.1."
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}virtualenv 20.15.1 installed.${RESET}"
 
 echo -e "    ${INFO_EMOJI} ${BLUE}12.4. Cloning silentbridge repository...${RESET}"
