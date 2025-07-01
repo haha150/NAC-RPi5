@@ -1,3 +1,10 @@
+## [0.1.3](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.2...v0.1.3) (2025-07-01)
+
+
+### Bug Fixes
+
+* remove silentbridge ([bc7a58c](https://github.com/l4rm4nd/NAC-RPi4/commit/bc7a58c1c09d6155d01c34e0b9f38f91560ac28a))
+
 ## [0.1.2](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.1...v0.1.2) (2025-07-01)
 
 
