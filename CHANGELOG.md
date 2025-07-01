@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.1...v0.1.2) (2025-07-01)
+
+
+### Bug Fixes
+
+* correct virtualenv downgrade ([d0f55cc](https://github.com/l4rm4nd/NAC-RPi4/commit/d0f55cc7be0ba00cf7e34d639be556e9dbb0752f))
+
 ## [0.1.1](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.0...v0.1.1) (2025-06-27)
 
 
