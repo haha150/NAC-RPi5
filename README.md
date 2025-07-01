@@ -37,20 +37,44 @@ Before running this script, make sure you have:
 
 Follow these steps to get your Raspberry Pi configured:
 
-### 1. Download the Script
+### 1. Flash Kali Linux ARM x64 onto your RPi 4
 
-You can clone the repository (if hosted on GitHub) or directly download the script:
+Fetch the Kali Linux ISO and flash it onto your SD Card using RPI Imager.
+
+- https://www.kali.org/get-kali/#kali-arm
+- https://github.com/raspberrypi/rpi-imager
+
+>[!TIP]
+> Using RPI Imager you can configure a default username and password as well as enable OpenSSH!
+
+>[!WARNING]
+> Use a LAN cable and refrain from setting up WLAN.
+>
+> Please connect all hardware devices to the RPi already (LAN/LTE USB adapters).
+
+### 2. Update
+
+Install latest updates onto your RPi4:
+
+````
+sudo apt update && sudo apt upgrade -y && sudo reboot now
+````
+
+### 3. Download the Script and Run
+
+You can clone this repository and run the script:
 
 ```bash
-git clone https://github.com/l4rm4nd/NAC-RPi4
-cd NAC-RPi4
+git clone https://github.com/l4rm4nd/NAC-RPi4 && cd NAC-RPi4
+sudo chmod +x provision.sh
+sudo ./provision.sh
 ```
 
-### 2. Reboot
+### 4. Reboot
 
-After the script has finished, please reboot your RPI4.
+After the script has finished, please reboot your RPI4. You can remove the LAN cable from now on.
 
-### 3. Connect to WiFi Hotspot
+### 5. Connect to WiFi Hotspot
 
 The RPi4 will spawn a wifi hotspot with your given SSID and password during installation.
 
@@ -58,7 +82,7 @@ Simply connect to the access point.
 
 A DHCP server will be running, handing out client IP addresses from the range `192.168.200.2 - 100`.
 
-### 4. SSH Access
+### 6. SSH Access
 
 #### Via WiFi Hotspot
 
@@ -68,22 +92,22 @@ The RPi4 will have the IP address `192.168.200.1`. Just connect with your favori
 
 #### Via LTE + VPN
 
-In case you make use of an LTE connection, you can store your WireGuard client profile at `/etc/wireguard/wg0.conf` and start a VPN connection via `sudo wg-quick up wg0`. Then, the RPi4 will be in the same VPN network as your operators (pentesters, red teamers etc.). This allows remote access into a compromised corporate's network, while using an Out-of-Band (OOB) LTE+Wireguard network channel.
+In case you make use of an LTE connection, you can store your WireGuard client profile at `/etc/wireguard/wg0.conf` and start a VPN connection via `sudo wg-quick up wg0`. Then, the RPi4 will be in the same VPN network as your operators (pentesters, red teamers etc.). This allows remote access into a compromised corporate's network, while using an Out-of-Band (OOB) LTE+Wireguard network channel. The WG VPN is not configured to automatically start. It's up to you to configure this.
 
 >[!WARNING]
 > SSH uses public key authentication for external networks per default. No password auth.
 >
-> You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entry in the SSH config regarding `Match Address ...`.
+> You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entries in the SSH config regarding `Match Address ...`.
 
-### 5. Adjustments
+### 7. Adjustments
 
 1. Re-check the OpenSSH configuration at `/etc/ssh/sshd_config`.
 2. Re-check the Huawei SIM PIN at `/home/<your-username>/huawei_hilink_api/example_huawei_hilink.sh`.
-3. Place your Wireguard client profile at `/etc/wireguard/wg0.conf`.
+3. Place your Wireguard client profile at `/etc/wireguard/wg0.conf` and may configure VPN auto-connect after boot.
 
-### 6. NAC Bypass
+### 8. NAC Bypass
 
-Use the tools `nac_bypass` at `/root/` to your advantage.
+Use the tools `/root/nac_bypass` to your advantage.
 
 May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
 
