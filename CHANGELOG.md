@@ -1,3 +1,10 @@
+## [0.1.4](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.3...v0.1.4) (2025-07-01)
+
+
+### Bug Fixes
+
+* optional ssh ip whitelisting ([3afc49a](https://github.com/l4rm4nd/NAC-RPi4/commit/3afc49aad821fb70356183aad9e43bcd215734c0))
+
 ## [0.1.3](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.2...v0.1.3) (2025-07-01)
 
 
