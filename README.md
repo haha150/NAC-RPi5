@@ -29,7 +29,7 @@ Before running this script, make sure you have:
 * **LAN USB Adapter:** For NAC bypassing to work, you must have a second LAN NIC (eth1) besides the native one (eth0). Easily achieved by purchasing a LAN USB adapter like [this one](https://amzn.eu/d/eYJzfUH).
 
 > [!TIP]
-> You may want to add a [hardened case with display](https://amzn.eu/d/90DKels) and [LTE USB dongle](https://amzn.eu/d/5NSOiOt). Totally optional though.
+> You may want to add a [hardened case with display](https://amzn.eu/d/90DKels) and [LTE USB dongle](https://amzn.eu/d/5NSOiOt). Totally optional though. For the TFT display, you must install the drivers from [here](https://github.com/lcdwiki/LCD-show-kali).
 
 ---
 
