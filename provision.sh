@@ -228,6 +228,7 @@ echo -e "    ${SUCCESS_EMOJI} ${GREEN}systemd-networkd enabled and restart attem
 # --- Step 7.1: Configure eth1 for DHCP using /etc/network/interfaces.d/ ---
 echo -e "${STEP_EMOJI} ${BLUE}7.1. Configuring eth1 for DHCP using /etc/network/interfaces.d/...${RESET}"
 INTERFACES_D_DIR="/etc/network/interfaces.d"
+mkdir -p "$INTERFACES_D_DIR" || error_exit "Failed to create $INTERFACES_D_DIR."
 ETH1_CONF="$INTERFACES_D_DIR/eth1"
 
 cat <<EOL > "$ETH1_CONF"
@@ -238,6 +239,18 @@ EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $ETH1_CONF."; fi
 echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH1_CONF created for DHCP.${RESET}"
 echo -e "     ${WARNING_EMOJI} ${YELLOW}Note: You are configuring 'eth1' using '/etc/network/interfaces.d/' while 'wlan0' is managed by 'systemd-networkd'. This is a hybrid setup and requires a reboot to take full effect for 'eth1'. Ensure NetworkManager is disabled to avoid conflicts.${RESET}\n"
+
+# --- Step 7.2: Configure eth0 for hotplug (no IP) using /etc/network/interfaces.d/ ---
+echo -e "${STEP_EMOJI} ${BLUE}7.2. Configuring eth0 for hotplug (no IP assigned) using /etc/network/interfaces.d/...${RESET}"
+ETH0_CONF="$INTERFACES_D_DIR/eth0"
+
+cat <<EOL > "$ETH0_CONF"
+auto eth0
+    allow-hotplug eth0
+EOL
+if [ $? -ne 0 ]; then error_exit "Failed to write $ETH0_CONF."; fi
+echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH0_CONF created for hotplug, no IP assigned.${RESET}\n"
+
 
 # The original script would continue here with Step 8.
 
@@ -326,10 +339,6 @@ PermitUserEnvironment no
 StrictModes yes
 #UsePrivilegeSeparation yes # deprecated
 
-# SSH Access Controls - Groups
-#AllowGroups ssh
-#AllowUsers ssh-user
-
 # SSH Encryption Ciphers
 # recommended from https://www.sshaudit.com/hardening_guides.html#ubuntu_20_04_lts
 Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes256-ctr,aes192-ctr
@@ -368,12 +377,17 @@ echo -e "${SUCCESS_EMOJI} ${GREEN}SSH service restart attempted.${RESET}\n"
 echo -e "${STEP_EMOJI} ${BLUE}11. Installing and configuring nac_bypass tool...${RESET}"
 
 echo -e "    ${INFO_EMOJI} ${BLUE}11.1. Installing nac_bypass dependencies...${RESET}"
-# Only install if running something other than Kali Linux, or if not sure, install anyway.
-# This script is for RPi4, which could be running Kali, but ensuring dependencies are there.
 apt-get install -y bridge-utils ethtool macchanger arptables ebtables iptables net-tools tcpdump git || error_exit "Failed to install nac_bypass dependencies."
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}nac_bypass dependencies installed.${RESET}"
 
-echo -e "    ${INFO_EMOJI} ${BLUE}11.2. Loading kernel module br_netfilter...${RESET}"
+echo -e "    ${STEP_EMOJI} ${BLUE}11.2. Ensuring legacy iptables, arptables, and ebtables are used...${RESET}"
+update-alternatives --set iptables /usr/sbin/iptables-legacy || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set iptables to legacy. Manual intervention may be needed.${RESET}"
+update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set ip6tables to legacy. Manual intervention may be needed.${RESET}"
+update-alternatives --set arptables /usr/sbin/arptables-legacy || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set arptables to legacy. Manual intervention may be needed.${RESET}"
+update-alternatives --set ebtables /usr/sbin/ebtables-legacy || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set ebtables to legacy. Manual intervention may be needed.${RESET}"
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}Legacy netfilter tools configured.${RESET}"
+
+echo -e "    ${INFO_EMOJI} ${BLUE}11.3. Loading kernel module br_netfilter...${RESET}"
 modprobe br_netfilter
 if ! lsmod | grep -q br_netfilter; then
     echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: br_netfilter module not loaded. Manual intervention may be needed.${RESET}"
@@ -381,7 +395,7 @@ else
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}br_netfilter module loaded.${RESET}"
 fi
 
-echo -e "    ${INFO_EMOJI} ${BLUE}11.3. Appending br_netfilter to /etc/modules...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.4. Appending br_netfilter to /etc/modules...${RESET}"
 if ! grep -q "br_netfilter" /etc/modules; then
     echo "br_netfilter" | tee -a /etc/modules || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to append br_netfilter to /etc/modules.${RESET}"
 else
@@ -389,7 +403,13 @@ else
 fi
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}br_netfilter configuration complete.${RESET}"
 
-echo -e "    ${INFO_EMOJI} ${BLUE}11.4. Enabling IP forwarding in /etc/sysctl.conf...${RESET}"
+# --- Added Step: Add root cronjob to ensure br_netfilter module is loaded ---
+echo -e "    ${STEP_EMOJI} ${BLUE}11.5. Adding root cronjob to ensure br_netfilter module is loaded on reboot...${RESET}"
+(crontab -l -u root 2>/dev/null | grep -v 'modprobe br_netfilter' ; echo "@reboot /sbin/modprobe br_netfilter") | crontab -u root -
+if [ $? -ne 0 ]; then error_exit "Failed to add root cronjob for br_netfilter."; fi
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}Root cronjob for br_netfilter added.${RESET}"
+
+echo -e "    ${INFO_EMOJI} ${BLUE}11.6. Enabling IP forwarding in /etc/sysctl.conf...${RESET}"
 SYSCTL_CONF="/etc/sysctl.conf"
 if ! grep -q "^net.ipv4.ip_forward = 1" "$SYSCTL_CONF"; then
     echo "net.ipv4.ip_forward = 1" >> "$SYSCTL_CONF"
@@ -402,7 +422,7 @@ sysctl -p || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to apply sys
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}IP forwarding enabled.${RESET}"
 
 
-echo -e "    ${INFO_EMOJI} ${BLUE}11.5. Cloning nac_bypass repository...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.7. Cloning nac_bypass repository...${RESET}"
 NAC_BYPASS_DIR="$HOME/nac_bypass"
 if [ -d "$NAC_BYPASS_DIR" ]; then
     echo -e "    ${INFO_EMOJI} ${BLUE}$NAC_BYPASS_DIR already exists. Pulling latest changes...${RESET}"
@@ -412,7 +432,7 @@ else
 fi
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}nac_bypass repository cloned/updated.${RESET}"
 
-echo -e "    ${INFO_EMOJI} ${BLUE}11.6. Setting permissions for nac_bypass_setup.sh...${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}11.8. Setting permissions for nac_bypass_setup.sh...${RESET}"
 chmod +x "$NAC_BYPASS_DIR/nac_bypass_setup.sh" || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for nac_bypass_setup.sh.${RESET}"
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}Permissions set for nac_bypass_setup.sh.${RESET}\n"
 
@@ -543,7 +563,7 @@ echo -e "    ${MAGENTA}    cd ${BOLD}$NAC_BYPASS_DIR${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}4. Start the NAC bypass (replace eth0 and eth1 with your actual interface names if different):${RESET}"
 echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it completes, you can proceed with your network scan.${RESET}"
-echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RESET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RET}"
 echo -e "    ${MAGENTA}    ./Responder.py -I br0 -e victim.ip${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}You can inspect iptables rules with: ${BOLD}iptables -t nat -L${RESET}\n"
 
