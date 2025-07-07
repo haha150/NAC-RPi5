@@ -104,6 +104,12 @@ In case you make use of an LTE connection, you can store your WireGuard client p
 1. Re-check the OpenSSH configuration at `/etc/ssh/sshd_config`.
 2. Re-check the Huawei SIM PIN at `/home/<your-username>/huawei_hilink_api/example_huawei_hilink.sh`.
 3. Place your Wireguard client profile at `/etc/wireguard/wg0.conf` and may configure VPN auto-connect after boot.
+4. Ensure `legacy` versions are used and not nftables
+   - `sudo update-alternatives --config iptables`
+   - `sudo update-alternatives --config arptables`
+   - `sudo update-alternatives --config ebtables`
+5. Ensure kernel module is active
+   - `echo br_netfilter | sudo tee -a /etc/modules`
 
 ### 8. NAC Bypass
 
