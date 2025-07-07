@@ -1,3 +1,10 @@
+## [0.1.6](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.5...v0.1.6) (2025-07-07)
+
+
+### Bug Fixes
+
+* add legacy iptables and sorts ([1ddb994](https://github.com/l4rm4nd/NAC-RPi4/commit/1ddb994906be9b2f502dffef7e0892eef099a35e))
+
 ## [0.1.5](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.4...v0.1.5) (2025-07-01)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * correct virtualenv downgrade ([d0f55cc](https://github.com/l4rm4nd/NAC-RPi4/commit/d0f55cc7be0ba00cf7e34d639be556e9dbb0752f))
-
-## [0.1.1](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.0...v0.1.1) (2025-06-27)
-
-
-### Bug Fixes
-
-* disable network manager ([9ac375f](https://github.com/l4rm4nd/NAC-RPi4/commit/9ac375f92b2e29e137518b8c365d09349649c1ea))
 
