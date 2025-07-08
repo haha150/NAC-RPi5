@@ -128,7 +128,7 @@ Then start the nac bypass:
 
 ````bash
 # by default it will treat the lower interface device as switch side, and the next one as victim
-./nac_bypass_setup.sh -1 eth0 -2 eth1
+./nac_bypass_setup.sh -1 eth0 -2 eth1 -S -R
 
 # script will ask to wait some time, so it is able to dump the needed info from the network traffic
 # afterwards, you can proceed and for instance do an nmap scan on the network
