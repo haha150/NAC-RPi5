@@ -96,12 +96,28 @@ In case you make use of an LTE connection, you can store your WireGuard client p
 
 I rather configure a C2 beacon to reach out. Works more reliably and no pain with interfaces. 
 
-Put something like this into your crontab:
+Put something like this into your root's crontab:
 
 ```
 # execute c2 beacon elf file hourly
 @hourly nohup /home/username/linux.bin 2>&1 &
 ```
+
+Also, if LTE dongle is active as eth2, we should fix ip routes:
+
+````bash
+# route private class ips through bridge interface
+ip route add 10.0.0.0/8 via 169.254.66.1 dev br0
+ip route add 172.16.0.0/12 via 169.254.66.1 dev br0
+ip route add 192.168.0.0/16 via 169.254.66.1 dev br0
+
+# remove default route by nac_bypass.sh
+ip route del default via 169.254.66.1 dev br0
+
+# make lte dongle interface the default
+# should already be there, ensure the following line is available when running `ip route`
+# default via 192.168.8.1 dev eth2 proto dhcp src 192.168.8.111 metric 1018
+````
 
 >[!WARNING]
 > SSH uses public key authentication for external networks per default. No password auth.
