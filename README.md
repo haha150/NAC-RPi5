@@ -97,6 +97,12 @@ The NAC bypass script will add specific iptables rules to make OpenSSH and Respo
 ````
 # rewrite OpenSSH and map TCP/22 (RPi) to victim NAC device (TCP/50222)
 /sbin/iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 50222 -j DNAT --to-destination 169.254.66.66:22
+
+# ispect the rules
+sudo iptables -t nat -L -n --line-numbers
+
+# remove rules
+sudo iptables -t nat -D PREROUTING <ID>
 ````
 
 You can then simply access OpenSSH using the victim network:
