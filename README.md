@@ -12,8 +12,7 @@ Bash Script to Initialize a Raspberry Pi 4 for Bridged-based 802.1x (NAC) Bypass
 * **🌐 Wi-Fi Hotspot Creation:** Transforms your Raspberry Pi 4 into a dedicated access point with a custom SSID and WPA-PSK password.
 * **📡 DHCP Server Configuration:** Sets up `isc-dhcp-server` to automatically assign IP addresses (192.168.200.2-100) to devices connecting to your hotspot.
 * **🔒 SSH Security Hardening:** Overwrites the default `sshd_config` with a more secure setup. This includes disabling password authentication by default (except for your hotspot's subnet) and enforcing stronger ciphers and MACs.
-* **⚙️ Static IP for `wlan0`:** Configures a static IP address for the `wlan0` interface (192.168.200.1) using `systemd-networkd` for reliable hotspot operation.
-* **👻 NAC Bypass Tool Installation:** Installs and sets up the `nac_bypass` tool for advanced network access control evasion. This involves loading necessary kernel modules, enabling IP forwarding, and cloning the repository.
+* **👻 NAC Bypass Tool Installation:** Installs and sets up the `nac_bypass` tool for advanced network access control evasion.
 * **🛡️ Huawei LTE Dongle Setup:** Installs management scripts and systemd services to manage LTE/VPN Out-of-Band (OOB) connections to bypass NAT and allow remote access. Makes use of [Huawei Hilink scripts](https://github.com/zbchristian/huawei_hilink_api) for SIM PIN and LTE connection management.
 
 ---
