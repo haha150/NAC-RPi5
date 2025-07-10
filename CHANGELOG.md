@@ -1,3 +1,10 @@
+## [0.1.8](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.7...v0.1.8) (2025-07-10)
+
+
+### Bug Fixes
+
+* Update README.md ([d673f91](https://github.com/l4rm4nd/NAC-RPi4/commit/d673f914b8a7b58af66d164972b7df324b6f47b1))
+
 ## [0.1.7](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.6...v0.1.7) (2025-07-10)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * optional ssh ip whitelisting ([3afc49a](https://github.com/l4rm4nd/NAC-RPi4/commit/3afc49aad821fb70356183aad9e43bcd215734c0))
-
-## [0.1.3](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.2...v0.1.3) (2025-07-01)
-
-
-### Bug Fixes
-
-* remove silentbridge ([bc7a58c](https://github.com/l4rm4nd/NAC-RPi4/commit/bc7a58c1c09d6155d01c34e0b9f38f91560ac28a))
 
