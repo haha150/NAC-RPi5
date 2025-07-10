@@ -1,3 +1,10 @@
+## [0.1.9](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.8...v0.1.9) (2025-07-10)
+
+
+### Bug Fixes
+
+* Update provision.sh ([7bae6a8](https://github.com/l4rm4nd/NAC-RPi4/commit/7bae6a869b4d38f29b53b248b99772c9bf0dd24c))
+
 ## [0.1.8](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.7...v0.1.8) (2025-07-10)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * adjust ssh config ([b41ca06](https://github.com/l4rm4nd/NAC-RPi4/commit/b41ca06c990b4cd351c75cd6be0cb38db31d1a89))
-
-## [0.1.4](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.3...v0.1.4) (2025-07-01)
-
-
-### Bug Fixes
-
-* optional ssh ip whitelisting ([3afc49a](https://github.com/l4rm4nd/NAC-RPi4/commit/3afc49aad821fb70356183aad9e43bcd215734c0))
 
