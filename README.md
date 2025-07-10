@@ -127,17 +127,17 @@ This makes Internet work natively and things such as `wg-quick`, `apt update`, e
 
 #### Via Victim Network
 
-The NAC bypass script will add specific iptables rules to make OpenSSH work. This is done automatically if you run `nac_bypass.sh` with the `-S` flag. Under the hood, the script will create iptables rules to rewrite packets originating at the victim's IP address (e.g. printer) and port `TCP/50222` to the Raspberry Pi and its OpenSSH service on `TCP/22`. This is beneficial, as you can now access the RPi's SSH service from within the corporate's network.
+The NAC bypass script will add specific iptables rules to make OpenSSH work. This is done automatically if you run `nac_bypass_setup.sh` with the `-S` flag. Under the hood, the script will create iptables rules to rewrite packets originating at the victim's IP address (e.g. printer) and port `TCP/50022` to the Raspberry Pi and its OpenSSH service on `TCP/22`. This is beneficial, as you can now access the RPi's SSH service from within the corporate's network.
 
 ````
-# rewrite OpenSSH and map TCP/22 (RPi) to victim NAC device (TCP/50222)
-/sbin/iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 50222 -j DNAT --to-destination 169.254.66.66:22
+# rewrite OpenSSH and map TCP/22 (RPi) to victim NAC device (TCP/50022)
+/sbin/iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 50022 -j DNAT --to-destination 169.254.66.66:22
 ````
 
 You can then simply access OpenSSH using the target corporate network and victim's IP address:
 
 ````
-ssh <user>@<victim-printer-ip> -p 50222 -i <priv-key>
+ssh <user>@<victim-printer-ip> -p 50022 -i <priv-key>
 ````
 
 ### 7. Adjustments
