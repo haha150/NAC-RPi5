@@ -1,3 +1,10 @@
+## [0.1.7](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.6...v0.1.7) (2025-07-10)
+
+
+### Bug Fixes
+
+* Update README.md ([c7af982](https://github.com/l4rm4nd/NAC-RPi4/commit/c7af9825d63057f7452f4cca69b0b8d367d047c3))
+
 ## [0.1.6](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.5...v0.1.6) (2025-07-07)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * remove silentbridge ([bc7a58c](https://github.com/l4rm4nd/NAC-RPi4/commit/bc7a58c1c09d6155d01c34e0b9f38f91560ac28a))
-
-## [0.1.2](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.1...v0.1.2) (2025-07-01)
-
-
-### Bug Fixes
-
-* correct virtualenv downgrade ([d0f55cc](https://github.com/l4rm4nd/NAC-RPi4/commit/d0f55cc7be0ba00cf7e34d639be556e9dbb0752f))
 
