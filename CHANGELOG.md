@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.2.0...v0.2.1) (2025-07-14)
+
+
+### Bug Fixes
+
+* docs ([e6525a2](https://github.com/l4rm4nd/NAC-RPi4/commit/e6525a23a1f006d94e099e12f9a9cdf3ef727369))
+
 ## [0.2.0](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.13...v0.2.0) (2025-07-14)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * overwrite huawei settings ([85b5cee](https://github.com/l4rm4nd/NAC-RPi4/commit/85b5ceea2cc4553d4acb1e0a3ee62deee0cdee8c))
-
-## [0.1.10](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.9...v0.1.10) (2025-07-14)
-
-
-### Bug Fixes
-
-* eth0 interface ([302855e](https://github.com/l4rm4nd/NAC-RPi4/commit/302855e67e63c1fdbf2799baaa3cf4d5bd964bf5))
 
