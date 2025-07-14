@@ -1,3 +1,10 @@
+## [0.2.0](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.13...v0.2.0) (2025-07-14)
+
+
+### Features
+
+* add macchanger info and release ([d399cfa](https://github.com/l4rm4nd/NAC-RPi4/commit/d399cfa18f23948ddd01027e67e5985ae4d20a74))
+
 ## [0.1.13](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.12...v0.1.13) (2025-07-14)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * eth0 interface ([302855e](https://github.com/l4rm4nd/NAC-RPi4/commit/302855e67e63c1fdbf2799baaa3cf4d5bd964bf5))
-
-## [0.1.9](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.8...v0.1.9) (2025-07-10)
-
-
-### Bug Fixes
-
-* Update provision.sh ([7bae6a8](https://github.com/l4rm4nd/NAC-RPi4/commit/7bae6a869b4d38f29b53b248b99772c9bf0dd24c))
 
