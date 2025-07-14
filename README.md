@@ -157,8 +157,9 @@ ssh <user>@<victim-printer-ip> -p 50022 -i <priv-key>
    - `sudo update-alternatives --config ebtables`
 5. Ensure kernel module is active
    - `echo br_netfilter | sudo tee -a /etc/modules`
-6. Randomize MAC for Red Teaming
+6. Optional: Randomize MAC for Red Teaming
    - `sudo ifconfig eth0 down && sudo macchanger -A eth0 && sudo ifconfig eth0 up`
+7. Optional: Use [this repo](https://github.com/l4rm4nd/NAC-RPi4-TFT) to show a custom background image on the tft display
 
 ### 8. NAC Bypass
 
