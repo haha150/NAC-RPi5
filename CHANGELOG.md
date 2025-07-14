@@ -1,3 +1,10 @@
+## [0.1.13](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.12...v0.1.13) (2025-07-14)
+
+
+### Bug Fixes
+
+* add lte fix route script ([3bc8ce1](https://github.com/l4rm4nd/NAC-RPi4/commit/3bc8ce13306ef2b3fbe9d8d802e41b82cb1d84e6))
+
 ## [0.1.12](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.11...v0.1.12) (2025-07-14)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * Update provision.sh ([7bae6a8](https://github.com/l4rm4nd/NAC-RPi4/commit/7bae6a869b4d38f29b53b248b99772c9bf0dd24c))
-
-## [0.1.8](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.7...v0.1.8) (2025-07-10)
-
-
-### Bug Fixes
-
-* Update README.md ([d673f91](https://github.com/l4rm4nd/NAC-RPi4/commit/d673f914b8a7b58af66d164972b7df324b6f47b1))
 
