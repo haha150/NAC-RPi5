@@ -510,6 +510,25 @@ EOL
     systemctl enable huawei-lte-connect.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable huawei-lte-connect.service. Check logs after reboot.${RESET}"
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}Huawei LTE service enabled.${RESET}\n"
 
+    # --- Step 12.5: Create fix-lte-routing.sh script ---
+    echo -e "${STEP_EMOJI} ${BLUE}12.5. Creating /root/fix-lte-routing.sh for specific route adjustments...${RESET}"
+    FIX_LTE_ROUTING_SCRIPT="/root/fix-lte-routing.sh"
+    cat <<'EOF_FIX_ROUTE' > "$FIX_LTE_ROUTING_SCRIPT"
+#!/bin/bash
+
+# Route private class ips through bridge interface
+ip route add 10.0.0.0/8 via 169.254.66.1 dev br0 || true
+ip route add 172.16.0.0/12 via 169.254.66.1 dev br0 || true
+ip route add 192.168.0.0/16 via 169.254.66.1 dev br0 || true
+
+# Remove default route by nac_bypass.sh (if it exists)
+ip route del default via 169.254.66.1 dev br0 || true
+EOF_FIX_ROUTE
+    if [ $? -ne 0 ]; then error_exit "Failed to write $FIX_LTE_ROUTING_SCRIPT."; fi
+
+    chmod +x "$FIX_LTE_ROUTING_SCRIPT" || error_exit "Failed to set executable permissions for $FIX_LTE_ROUTING_SCRIPT."
+    echo -e "    ${SUCCESS_EMOJI} ${GREEN}$FIX_LTE_ROUTING_SCRIPT created and made executable.${RESET}\n"
+
     # --- Step 13: Install and Configure WireGuard VPN (Optional) ---
     if [ "$INSTALL_WIREGUARD" = true ]; then
         echo -e "${STEP_EMOJI} ${BLUE}13. Installing and configuring WireGuard VPN...${RESET}"
@@ -571,7 +590,7 @@ echo -e "    ${MAGENTA}    cd ${BOLD}$NAC_BYPASS_DIR${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}4. Start the NAC bypass (replace eth0 and eth1 with your actual interface names if different):${RESET}"
 echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1 -S${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it completes, you can proceed with your network scan.${RESET}"
-echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RET}"
+echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RESET}"
 echo -e "    ${MAGENTA}    ./Responder.py -I br0 -e victim.ip${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}You can inspect iptables rules with: ${BOLD}iptables -t nat -L${RESET}\n"
 
@@ -585,6 +604,7 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${INFO_EMOJI} ${BLUE}It will run the script '${BOLD}$HUAWEI_HILINK_DIR/example_huawei_hilink.sh on${RESET}${BLUE}' as user '${BOLD}${LTE_USERNAME}${RESET}${BLUE}'.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}After reboot, the LTE modem should attempt to connect automatically.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}You can check the service status with: ${BOLD}sudo systemctl status huawei-lte-connect.service${RESET}"
+    echo -e "${INFO_EMOJI} ${BLUE}A routing fix script has been placed at '${BOLD}/root/fix-lte-routing.sh${RESET}${BLUE}'. You may need to run this manually after NAC bypass setup.${RESET}\n"
 
     if [ "$INSTALL_WIREGUARD" = true ]; then
         echo -e "${INFO_EMOJI} ${BLUE}The WireGuard VPN (${BOLD}wg0${RESET}${BLUE}) has been configured to start automatically AFTER the LTE connection has stable internet access via ${BOLD}eth2${RESET}${BLUE}.${RESET}"
