@@ -1,3 +1,10 @@
+## [0.1.11](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.10...v0.1.11) (2025-07-14)
+
+
+### Bug Fixes
+
+* overwrite huawei settings ([85b5cee](https://github.com/l4rm4nd/NAC-RPi4/commit/85b5ceea2cc4553d4acb1e0a3ee62deee0cdee8c))
+
 ## [0.1.10](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.9...v0.1.10) (2025-07-14)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * Update README.md ([c7af982](https://github.com/l4rm4nd/NAC-RPi4/commit/c7af9825d63057f7452f4cca69b0b8d367d047c3))
-
-## [0.1.6](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.5...v0.1.6) (2025-07-07)
-
-
-### Bug Fixes
-
-* add legacy iptables and sorts ([1ddb994](https://github.com/l4rm4nd/NAC-RPi4/commit/1ddb994906be9b2f502dffef7e0892eef099a35e))
 
