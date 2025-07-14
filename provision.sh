@@ -244,6 +244,7 @@ ETH0_CONF="$INTERFACES_D_DIR/eth0"
 cat <<EOL > "$ETH0_CONF"
 auto eth0
     allow-hotplug eth0
+    iface eth0 inet dhcp
 EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $ETH0_CONF."; fi
 echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH0_CONF created for hotplug, no IP assigned.${RESET}\n"
