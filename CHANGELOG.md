@@ -1,3 +1,10 @@
+## [0.1.10](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.9...v0.1.10) (2025-07-14)
+
+
+### Bug Fixes
+
+* eth0 interface ([302855e](https://github.com/l4rm4nd/NAC-RPi4/commit/302855e67e63c1fdbf2799baaa3cf4d5bd964bf5))
+
 ## [0.1.9](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.8...v0.1.9) (2025-07-10)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * add legacy iptables and sorts ([1ddb994](https://github.com/l4rm4nd/NAC-RPi4/commit/1ddb994906be9b2f502dffef7e0892eef099a35e))
-
-## [0.1.5](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.4...v0.1.5) (2025-07-01)
-
-
-### Bug Fixes
-
-* adjust ssh config ([b41ca06](https://github.com/l4rm4nd/NAC-RPi4/commit/b41ca06c990b4cd351c75cd6be0cb38db31d1a89))
 
