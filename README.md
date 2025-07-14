@@ -124,6 +124,9 @@ This makes Internet work natively and things such as `wg-quick`, `apt update`, e
 >
 > You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entries in the SSH config regarding `Match Address ...`.
 
+>[!CAUTION]
+> Please plugin the Huawei LTE USB dongle at a USB 2.0 port and the Gbit LAN dongle at a USB 3.0 port.
+
 #### Via Victim Network
 
 The NAC bypass script will add specific iptables rules to make OpenSSH work. This is done automatically if you run `nac_bypass_setup.sh` with the `-S` flag. Under the hood, the script will create iptables rules to rewrite packets originating at the victim's IP address (e.g. printer) and port `TCP/50022` to the Raspberry Pi and its OpenSSH service on `TCP/22`. This is beneficial, as you can now access the RPi's SSH service from within the corporate's network.
