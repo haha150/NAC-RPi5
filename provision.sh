@@ -249,6 +249,19 @@ EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $ETH0_CONF."; fi
 echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH0_CONF created for hotplug, no IP assigned.${RESET}\n"
 
+# --- Step 7.3: Configure eth2 LTE for hotplug (no IP) using /etc/network/interfaces.d/ ---
+echo -e "${STEP_EMOJI} ${BLUE}7.3. Configuring eth2 for DHCP using /etc/network/interfaces.d/...${RESET}"
+ETH2_CONF="$INTERFACES_D_DIR/eth2"
+
+cat <<EOL > "$ETH2_CONF"
+auto eth2
+    allow-hotplug eth2
+    iface eth2 inet dhcp
+EOL
+if [ $? -ne 0 ]; then error_exit "Failed to write $ETH2_CONF."; fi
+echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH2_CONF created for DHCP.${RESET}"
+echo -e "     ${WARNING_EMOJI} ${YELLOW}Note: 'eth2' is configured via '/etc/network/interfaces.d/'. Ensure NetworkManager is disabled to avoid conflicts and a reboot is required for changes to take full effect.${RESET}\n"
+
 # --- Step 8: Reload systemd, enable, and restart services ---
 # Adjusted numbering from previous step
 echo -e "${STEP_EMOJI} ${BLUE}8. Reloading systemd daemon, enabling and restarting services...${RESET}"
