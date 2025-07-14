@@ -3,6 +3,10 @@
 # This script automates the setup of a Raspberry Pi 4 for NAC bypassing
 # based on the guide from https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/
 
+# Default values
+DEFAULT_WIFI_SSID="NACPI"
+DEFAULT_WIFI_PASSWORD="NacRPi31337!"
+
 # ANSI Color Codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -36,17 +40,23 @@ echo -e "${CYAN}----------------------------------------------------------------
 
 # --- User Input for Hotspot Details ---
 echo -e "${INFO_EMOJI} ${BLUE}Please provide details for your Wi-Fi Hotspot:${RESET}"
-read -p "Enter the desired Wi-Fi Hotspot Name (SSID): " WIFI_SSID
+read -p "Enter the desired Wi-Fi Hotspot Name (SSID) [default: ${DEFAULT_WIFI_SSID}]: " WIFI_SSID
+WIFI_SSID=${WIFI_SSID:-$DEFAULT_WIFI_SSID} # Use default if user input is empty
+
+read -s -p "Enter the desired Wi-Fi Password (WPA-PSK, min 8 characters) [default: ${DEFAULT_WIFI_PASSWORD}]: " WIFI_PASSWORD
+echo
+WIFI_PASSWORD=${WIFI_PASSWORD:-$DEFAULT_WIFI_PASSWORD} # Use default if user input is empty
+
 if [ -z "$WIFI_SSID" ]; then
     error_exit "Wi-Fi SSID cannot be empty."
 fi
 
-read -s -p "Enter the desired Wi-Fi Password (WPA-PSK, min 8 characters): " WIFI_PASSWORD
-echo
 if [ -z "$WIFI_PASSWORD" ] || [ ${#WIFI_PASSWORD} -lt 8 ]; then
     error_exit "Wi-Fi Password cannot be empty and must be at least 8 characters long."
 fi
 
+# The rest of your script remains the same from here on.
+# ... (rest of your script)
 # --- User Input for LTE Module Setup Option ---
 echo -e "\n${INFO_EMOJI} ${BLUE}Do you want to set up the Huawei LTE connection service? (y/n): ${RESET}"
 read -p "Enter 'y' or 'n': " -n 1 -r INSTALL_LTE_MODULE_CHOICE
@@ -604,13 +614,4 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${INFO_EMOJI} ${BLUE}It will run the script '${BOLD}$HUAWEI_HILINK_DIR/example_huawei_hilink.sh on${RESET}${BLUE}' as user '${BOLD}${LTE_USERNAME}${RESET}${BLUE}'.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}After reboot, the LTE modem should attempt to connect automatically.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}You can check the service status with: ${BOLD}sudo systemctl status huawei-lte-connect.service${RESET}"
-    echo -e "${INFO_EMOJI} ${BLUE}A routing fix script has been placed at '${BOLD}/root/fix-lte-routing.sh${RESET}${BLUE}'. You may need to run this manually after NAC bypass setup.${RESET}\n"
-
-    if [ "$INSTALL_WIREGUARD" = true ]; then
-        echo -e "${INFO_EMOJI} ${BLUE}The WireGuard VPN (${BOLD}wg0${RESET}${BLUE}) has been configured to start automatically AFTER the LTE connection has stable internet access via ${BOLD}eth2${RESET}${BLUE}.${RESET}"
-        echo -e "${INFO_EMOJI} ${BLUE}You must place your WireGuard configuration file as ${BOLD}/etc/wireguard/wg0.conf${RESET}${BLUE} for it to work.${RESET}"
-        echo -e "${INFO_EMOJI} ${BLUE}You can check the WireGuard service status with: ${BOLD}sudo systemctl status wg-quick@wg0.service${RESET}"
-        echo -e "${INFO_EMOJI} ${BLUE}And the WireGuard tunnel status with: ${BOLD}sudo wg${RESET}\n"
-    fi
-    echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
-fi
+    echo -e "${INFO_EMOJI} ${BLUE}A routing fix script has been placed at '${BOLD}/root/fix-lte-routing.sh${RES}"
