@@ -83,6 +83,11 @@ A DHCP server will be running, handing out client IP addresses from the range `1
 
 ### 6. SSH Access
 
+>[!WARNING]
+> SSH uses public key authentication for external networks per default. No password auth.
+>
+> You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entries in the SSH config regarding `Match Address`. Or just add your pub keys to `~/.ssh/authorized_keys` as usual.
+
 #### Via WiFi Hotspot
 
 Once connected to the wifi hotspot, you can access the RPi4's SSH network service on TCP/22.
@@ -93,16 +98,10 @@ The RPi4 will have the IP address `192.168.200.1`. Just connect with your favori
 
 In case you make use of an LTE connection, you can store your WireGuard client profile at `/etc/wireguard/wg0.conf` and start a VPN connection via `sudo wg-quick up wg0`. Then, the RPi4 will be in the same VPN network as your operators (pentesters, red teamers etc.). This allows remote access into a compromised corporate's network, while using an Out-of-Band (OOB) LTE+Wireguard network channel. The WG VPN is not configured to automatically start. It's up to you to configure this.
 
-I rather configure a C2 beacon to reach out. Works more reliably and no pain with interfaces. 
+>[!CAUTION]
+> Please plugin the Huawei LTE USB dongle at a USB 2.0 port and the Gbit LAN dongle at a USB 3.0 port.
 
-Put something like this into your root's crontab:
-
-```
-# execute c2 beacon elf file hourly
-@hourly nohup /tmp/c2_beacon_arm_linux.bin 2>&1 &
-```
-
-Also, if LTE dongle is active as eth2, we should fix ip routes:
+For this to work flawlessly, you must also adjust routes after bypassing NAC:
 
 ````bash
 # route private class ips through bridge interface
@@ -117,15 +116,18 @@ ip route del default via 169.254.66.1 dev br0
 # should already be there, ensure the following line is available when running `ip route`
 # default via 192.168.8.1 dev eth2 proto dhcp src 192.168.8.111 metric 1018
 ````
+
 This makes Internet work natively and things such as `wg-quick`, `apt update`, exfiltration and so on.
 
->[!WARNING]
-> SSH uses public key authentication for external networks per default. No password auth.
+> [!TIP]
+> I rather configure a C2 beacon to reach out. Works more reliably and no pain with interfaces. 
 >
-> You can adjust the `/etc/ssh/sshd_config` though and whitelist your VPN IP CIDR range for password authentication. See the last entries in the SSH config regarding `Match Address ...`.
-
->[!CAUTION]
-> Please plugin the Huawei LTE USB dongle at a USB 2.0 port and the Gbit LAN dongle at a USB 3.0 port.
+> Put something like this into your root's crontab:
+>
+> ```
+> # execute c2 beacon elf file hourly
+> @hourly nohup /tmp/c2_beacon_arm_linux.bin 2>&1 &
+> ```
 
 #### Via Victim Network
 
