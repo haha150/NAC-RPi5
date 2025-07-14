@@ -101,7 +101,7 @@ In case you make use of an LTE connection, you can store your WireGuard client p
 >[!CAUTION]
 > Please plugin the Huawei LTE USB dongle at a USB 2.0 port and the Gbit LAN dongle at a USB 3.0 port.
 
-For this to work flawlessly, you must also adjust routes after bypassing NAC:
+For this to work flawlessly, you must adjust routes after bypassing NAC:
 
 ````bash
 # route private class ips through bridge interface
@@ -116,6 +116,8 @@ ip route del default via 169.254.66.1 dev br0
 # should already be there, ensure the following line is available when running `ip route`
 # default via 192.168.8.1 dev eth2 proto dhcp src 192.168.8.111 metric 1018
 ````
+
+For the sake of simplicity, you can just run `sudo sh /root/fix-lte-routing.sh`.
 
 This makes Internet work natively and things such as `wg-quick`, `apt update`, exfiltration and so on.
 
