@@ -153,6 +153,8 @@ ssh <user>@<victim-printer-ip> -p 50022 -i <priv-key>
    - `sudo update-alternatives --config ebtables`
 5. Ensure kernel module is active
    - `echo br_netfilter | sudo tee -a /etc/modules`
+6. Randomize MAC for Red Teaming
+   - `sudo ifconfig eth0 down && sudo macchanger -A eth0 && sudo ifconfig eth0 up`
 
 ### 8. NAC Bypass
 
