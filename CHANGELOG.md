@@ -1,3 +1,10 @@
+## [0.1.12](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.11...v0.1.12) (2025-07-14)
+
+
+### Bug Fixes
+
+* interfaces ([e553546](https://github.com/l4rm4nd/NAC-RPi4/commit/e553546fb5a798d0b8a39115b8c5929ae56d68e1))
+
 ## [0.1.11](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.10...v0.1.11) (2025-07-14)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * Update README.md ([d673f91](https://github.com/l4rm4nd/NAC-RPi4/commit/d673f914b8a7b58af66d164972b7df324b6f47b1))
-
-## [0.1.7](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.6...v0.1.7) (2025-07-10)
-
-
-### Bug Fixes
-
-* Update README.md ([c7af982](https://github.com/l4rm4nd/NAC-RPi4/commit/c7af9825d63057f7452f4cca69b0b8d367d047c3))
 
