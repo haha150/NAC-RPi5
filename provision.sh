@@ -459,9 +459,9 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     ESCAPED_HUAWEI_MODEM_PASSWORD=$(printf '%s\n' "$HUAWEI_MODEM_PASSWORD" | sed -e 's/[\/&]/\\&/g')
     ESCAPED_SIM_PIN=$(printf '%s\n' "$SIM_PIN" | sed -e 's/[\/&]/\\&/g')
 
-    # Replace hilink_password and hilink_pin in the script
-    sed -i "s/^hilink_password=\"1234Secret\"/hilink_password=\"$ESCAPED_HUAWEI_MODEM_PASSWORD\"/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_password in example_huawei_hilink.sh."
-    sed -i "s/^hilink_pin=\"1234\"/hilink_pin=\"$ESCAPED_SIM_PIN\"/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_pin in example_huawei_hilink.sh."
+    # Replace hilink_password and hilink_pin in the script, ensuring overwrite
+    sed -i -E "s/^(hilink_password=\")[^\"]*(\")/\1$ESCAPED_HUAWEI_MODEM_PASSWORD\2/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_password in example_huawei_hilink.sh."
+    sed -i -E "s/^(hilink_pin=\")[^\"]*(\")/\1$ESCAPED_SIM_PIN\2/" "$EXAMPLE_SCRIPT" || error_exit "Failed to set hilink_pin in example_huawei_hilink.sh."
 
     # Replace the relative source path with the absolute path
     sed -i "s|^source huawei_hilink_api.sh|source $HUAWEI_HILINK_DIR/huawei_hilink_api.sh|" "$EXAMPLE_SCRIPT" || error_exit "Failed to set absolute source path in example_huawei_hilink.sh."
