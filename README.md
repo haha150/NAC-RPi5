@@ -5,6 +5,10 @@ Bash Script to Initialize a Raspberry Pi 4 for Bridged-based 802.1x (NAC) Bypass
 >
 > Defeats 802.1x-2004 only and does not work for 802.x-2010 / MACSEC.
 
+>[!TIP]
+> Should work on all Debian-based distributions.
+>
+> Tested on Raspberry Pi 4 with `Kali Linux 2025.2 (ARM64)`.
 ---
 
 ## ✨ Features
