@@ -616,3 +616,4 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${INFO_EMOJI} ${BLUE}After reboot, the LTE modem should attempt to connect automatically.${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}You can check the service status with: ${BOLD}sudo systemctl status huawei-lte-connect.service${RESET}"
     echo -e "${INFO_EMOJI} ${BLUE}A routing fix script has been placed at '${BOLD}/root/fix-lte-routing.sh${RES}"
+fi
