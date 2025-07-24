@@ -395,7 +395,7 @@ echo -e "${SUCCESS_EMOJI} ${GREEN}SSH service restart attempted.${RESET}\n"
 echo -e "${STEP_EMOJI} ${BLUE}11. Installing and configuring nac_bypass tool...${RESET}"
 
 echo -e "    ${INFO_EMOJI} ${BLUE}11.1. Installing nac_bypass dependencies...${RESET}"
-apt-get install -y bridge-utils ethtool macchanger arptables ebtables iptables net-tools tcpdump git || error_exit "Failed to install nac_bypass dependencies."
+apt-get install -y bridge-utils ethtool macchanger arptables ebtables iptables net-tools tcpdump git cron || error_exit "Failed to install nac_bypass dependencies."
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}nac_bypass dependencies installed.${RESET}"
 
 echo -e "    ${STEP_EMOJI} ${BLUE}11.2. Ensuring legacy iptables, arptables, and ebtables are used...${RESET}"
