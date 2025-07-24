@@ -1,3 +1,10 @@
+## [0.2.4](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.2.3...v0.2.4) (2025-07-24)
+
+
+### Bug Fixes
+
+* missing endif ([24f19db](https://github.com/l4rm4nd/NAC-RPi4/commit/24f19dbbfc7ac9e59171be4e7d587457fb3c2a3f))
+
 ## [0.2.3](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.2.2...v0.2.3) (2025-07-24)
 
 
@@ -25,11 +32,4 @@
 ### Features
 
 * add macchanger info and release ([d399cfa](https://github.com/l4rm4nd/NAC-RPi4/commit/d399cfa18f23948ddd01027e67e5985ae4d20a74))
-
-## [0.1.13](https://github.com/l4rm4nd/NAC-RPi4/compare/v0.1.12...v0.1.13) (2025-07-14)
-
-
-### Bug Fixes
-
-* add lte fix route script ([3bc8ce1](https://github.com/l4rm4nd/NAC-RPi4/commit/3bc8ce13306ef2b3fbe9d8d802e41b82cb1d84e6))
 
