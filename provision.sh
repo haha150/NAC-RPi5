@@ -3,10 +3,6 @@
 # This script automates the setup of a Raspberry Pi 4 for NAC bypassing
 # based on the guide from https://luemmelsec.github.io/I-got-99-problems-but-my-NAC-aint-one/
 
-# Default values
-DEFAULT_WIFI_SSID="NACPI"
-DEFAULT_WIFI_PASSWORD="NacRPi31337!"
-
 # ANSI Color Codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -35,25 +31,8 @@ if [[ $EUID -ne 0 ]]; then
     error_exit "This script must be run as root. Please use 'sudo'."
 fi
 
-echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi Hotspot, DHCP, NAC Bypass, LTE, and VPN Setup Script!${RESET}"
+echo -e "${BOLD}${CYAN}Welcome to the Raspberry Pi NAC Bypass and LTE Setup Script!${RESET}"
 echo -e "${CYAN}----------------------------------------------------------------------------------${RESET}"
-
-# --- User Input for Hotspot Details ---
-echo -e "${INFO_EMOJI} ${BLUE}Please provide details for your Wi-Fi Hotspot:${RESET}"
-read -p "Enter the desired Wi-Fi Hotspot Name (SSID) [default: ${DEFAULT_WIFI_SSID}]: " WIFI_SSID
-WIFI_SSID=${WIFI_SSID:-$DEFAULT_WIFI_SSID} # Use default if user input is empty
-
-read -s -p "Enter the desired Wi-Fi Password (WPA-PSK, min 8 characters) [default: ${DEFAULT_WIFI_PASSWORD}]: " WIFI_PASSWORD
-echo
-WIFI_PASSWORD=${WIFI_PASSWORD:-$DEFAULT_WIFI_PASSWORD} # Use default if user input is empty
-
-if [ -z "$WIFI_SSID" ]; then
-    error_exit "Wi-Fi SSID cannot be empty."
-fi
-
-if [ -z "$WIFI_PASSWORD" ] || [ ${#WIFI_PASSWORD} -lt 8 ]; then
-    error_exit "Wi-Fi Password cannot be empty and must be at least 8 characters long."
-fi
 
 # The rest of your script remains the same from here on.
 # ... (rest of your script)
@@ -84,153 +63,31 @@ if [[ "$INSTALL_LTE_MODULE_CHOICE" == "y" ]]; then
     fi
 
     # --- User Input for WireGuard VPN Setup Option ---
-    echo -e "\n${INFO_EMOJI} ${BLUE}Do you want to set up an automatic WireGuard VPN connection? (y/n): ${RESET}"
-    read -p "Enter 'y' or 'n': " -n 1 -r INSTALL_WIREGUARD_CHOICE
+    echo -e "\n${INFO_EMOJI} ${BLUE}Do you want to set up an automatic Tailscale VPN connection? (y/n): ${RESET}"
+    read -p "Enter 'y' or 'n': " -n 1 -r INSTALL_TAILSCALE_CHOICE
     echo
-    INSTALL_WIREGUARD_CHOICE=${INSTALL_WIREGUARD_CHOICE,,} # Convert to lowercase
-    if [[ "$INSTALL_WIREGUARD_CHOICE" == "y" ]]; then
-        INSTALL_WIREGUARD=true
-        echo -e "\n${INFO_EMOJI} ${BLUE}Please ensure your WireGuard configuration file is named 'wg0.conf' and placed in '/etc/wireguard/'.${RESET}"
-        read -p "Press Enter to continue once 'wg0.conf' is in place, or 'q' to quit: " CONFIRM_WG
-        if [[ "$CONFIRM_WG" == "q" ]]; then
-            error_exit "WireGuard setup aborted by user."
+    INSTALL_TAILSCALE_CHOICE=${INSTALL_TAILSCALE_CHOICE,,} # Convert to lowercase
+    if [[ "$INSTALL_TAILSCALE_CHOICE" == "y" ]]; then
+        INSTALL_TAILSCALE=true
+        echo -e "\n${INFO_EMOJI} ${BLUE}Please provide your Tailscale auth key:${RESET}"
+        read -p "Enter Tailscale auth key: " TAILSCALE_AUTHKEY
+        if [ -z "$TAILSCALE_AUTHKEY" ]; then
+            error_exit "Tailscale auth key cannot be empty."
         fi
-        if [ ! -f "/etc/wireguard/wg0.conf" ]; then
-            error_exit "WireGuard config file /etc/wireguard/wg0.conf not found. Please create it first."
-        fi
-        echo -e "${SUCCESS_EMOJI} ${GREEN}WireGuard configuration file detected.${RESET}"
+        echo -e "${SUCCESS_EMOJI} ${GREEN}Tailscale setup completed successfully.${RESET}"
     else
-        INSTALL_WIREGUARD=false
-        echo -e "${INFO_EMOJI} ${BLUE}Skipping WireGuard VPN connection setup.${RESET}"
+        INSTALL_TAILSCALE=false
+        echo -e "${INFO_EMOJI} ${BLUE}Skipping Tailscale VPN setup.${RESET}"
     fi
 
 else
     INSTALL_LTE_MODULE=false
-    INSTALL_WIREGUARD=false # If no LTE, no WireGuard
-    echo -e "${INFO_EMOJI} ${BLUE}Skipping Huawei LTE connection service setup and WireGuard VPN setup.${RESET}"
+    INSTALL_TAILSCALE=false # If no LTE, no WireGuard
+    echo -e "${INFO_EMOJI} ${BLUE}Skipping Huawei LTE connection service setup and Tailscale VPN setup.${RESET}"
 fi
 
 
 echo -e "\n${BOLD}${CYAN}--- Starting installation and configuration ---${RESET}\n"
-
-# --- Step 1: Install required packages for Hotspot/DHCP ---
-echo -e "${STEP_EMOJI} ${BLUE}1. Installing isc-dhcp-server and hostapd...${RESET}"
-apt-get update || error_exit "Failed to update package lists."
-apt-get install -y isc-dhcp-server hostapd || error_exit "Failed to install required packages."
-echo -e "${SUCCESS_EMOJI} ${GREEN}isc-dhcp-server and hostapd installed.${RESET}\n"
-
-# --- Step 2: Enable and unmask services ---
-echo -e "${STEP_EMOJI} ${BLUE}2. Enabling and unmasking services...${RESET}"
-systemctl enable isc-dhcp-server || error_exit "Failed to enable isc-dhcp-server."
-systemctl unmask hostapd || error_exit "Failed to unmask hostapd."
-systemctl enable hostapd || error_exit "Failed to enable hostapd."
-echo -e "${SUCCESS_EMOJI} ${GREEN}Services enabled and unmasked.${RESET}\n"
-
-# --- Step 3: Configure DHCP Server (dhcpd.conf) ---
-echo -e "${STEP_EMOJI} ${BLUE}3. Configuring /etc/dhcp/dhcpd.conf...${RESET}"
-DHCPD_CONF="/etc/dhcp/dhcpd.conf"
-cat <<EOL > "$DHCPD_CONF"
-default-lease-time 600;
-max-lease-time 7200;
-subnet 192.168.200.0 netmask 255.255.255.0 {
-range 192.168.200.2 192.168.200.100;
-option subnet-mask 255.255.255.0;
-option broadcast-address 192.168.200.255;
-}
-EOL
-if [ $? -ne 0 ]; then error_exit "Failed to write $DHCPD_CONF."; fi
-echo -e "${SUCCESS_EMOJI} ${GREEN}$DHCPD_CONF configured.${RESET}\n"
-
-# --- Step 4: Configure Hostapd (hostapd.conf) ---
-echo -e "${STEP_EMOJI} ${BLUE}4. Configuring /etc/hostapd/hostapd.conf...${RESET}"
-HOSTAPD_CONF="/etc/hostapd/hostapd.conf"
-
-# Warning: Remove existing wlan0 configurations if they exist
-echo -e "    ${INFO_EMOJI} ${BLUE}Checking for existing wlan0 network configurations...${RESET}"
-if [ -f "/etc/netplan/50-cloud-init.yaml" ]; then
-    echo -e "    ${WARNING_EMOJI} ${YELLOW}Removing /etc/netplan/50-cloud-init.yaml...${RESET}"
-    rm /etc/netplan/50-cloud-init.yaml || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to remove /etc/netplan/50-cloud-init.yaml. Manual intervention might be needed.${RESET}"
-fi
-echo -e "    ${INFO_EMOJI} ${BLUE}If you have configured wlan0 manually or via Raspberry Pi Imager, you might need to remove it via 'nmtui'.${RESET}"
-
-
-cat <<EOL > "$HOSTAPD_CONF"
-interface=wlan0
-#driver=nl80211
-ssid=${WIFI_SSID}
-hw_mode=g
-channel=1
-ieee80211n=1
-ieee80211d=1
-country_code=DE
-#wme_enabled=1
-wmm_enabled=1
-auth_algs=1
-ignore_broadcast_ssid=0
-macaddr_acl=0
-wpa=2
-wpa_key_mgmt=WPA-PSK
-rsn_pairwise=CCMP
-wpa_passphrase=${WIFI_PASSWORD}
-EOL
-if [ $? -ne 0 ]; then error_exit "Failed to write $HOSTAPD_CONF."; fi
-echo -e "${SUCCESS_EMOJI} ${GREEN}$HOSTAPD_CONF configured with provided SSID and password.${RESET}\n"
-
-# --- Step 5: Validate interface name in isc-dhcp-server default file ---
-echo -e "${STEP_EMOJI} ${BLUE}5. Configuring /etc/default/isc-dhcp-server...${RESET}"
-DEFAULT_DHCP_SERVER="/etc/default/isc-dhcp-server"
-sed -i 's/^INTERFACESv4=.*$/INTERFACESv4="wlan0"/' "$DEFAULT_DHCP_SERVER"
-if ! grep -q 'INTERFACESv4="wlan0"' "$DEFAULT_DHCP_SERVER"; then
-    echo 'INTERFACESv4="wlan0"' >> "$DEFAULT_DHCP_SERVER"
-fi
-if [ $? -ne 0 ]; then error_exit "Failed to configure $DEFAULT_DHCP_SERVER."; fi
-echo -e "${SUCCESS_EMOJI} ${GREEN}$DEFAULT_DHCP_SERVER configured for wlan0.${RESET}\n"
-
-# --- Step 6: Create/Update systemd service for isc-dhcp-server ---
-echo -e "${STEP_EMOJI} ${BLUE}6. Creating/Updating /etc/systemd/system/isc-dhcp-server.service...${RESET}"
-SYSTEMD_DHCP_SERVICE="/etc/systemd/system/isc-dhcp-server.service"
-cat <<EOL > "$SYSTEMD_DHCP_SERVICE"
-[Unit]
-Description=ISC DHCP Server
-After=network-pre.target
-Wants=network-pre.target
-Requires=network-pre.target
-Requires=sys-subsystem-net-devices-wlan0.device
-After=sys-subsystem-net-devices-wlan0.device
-After=hostapd.service
-
-[Service]
-ExecStart=/etc/init.d/isc-dhcp-server start
-ExecStop=/etc/init.d/isc-dhcp-server stop
-Type=forking
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOL
-if [ $? -ne 0 ]; then error_exit "Failed to write $SYSTEMD_DHCP_SERVICE."; fi
-echo -e "${SUCCESS_EMOJI} ${GREEN}$SYSTEMD_DHCP_SERVICE created/updated.${RESET}\n"
-
-# --- Step 7: Configure wlan0 static IP with systemd-networkd ---
-echo -e "${STEP_EMOJI} ${BLUE}7. Configuring wlan0 static IP with systemd-networkd...${RESET}"
-SYSTEMD_NETWORK_DIR="/etc/systemd/network"
-mkdir -p "$SYSTEMD_NETWORK_DIR" || error_exit "Failed to create $SYSTEMD_NETWORK_DIR."
-NETWORK_CONF="$SYSTEMD_NETWORK_DIR/10-wlan0-static.network"
-
-cat <<EOL > "$NETWORK_CONF"
-[Match]
-Name=wlan0
-
-[Network]
-Address=192.168.200.1/24
-EOL
-if [ $? -ne 0 ]; then error_exit "Failed to write $NETWORK_CONF."; fi
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}$NETWORK_CONF created.${RESET}"
-
-echo -e "    ${INFO_EMOJI} ${BLUE}Enabling and restarting systemd-networkd...${RESET}"
-systemctl enable systemd-networkd || error_exit "Failed to enable systemd-networkd."
-systemctl restart systemd-networkd || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart systemd-networkd. Check logs or reboot.${RESET}"
-echo -e "    ${SUCCESS_EMOJI} ${GREEN}systemd-networkd enabled and restart attempted.${RESET}\n"
 
 # --- Step 7.1: Configure eth1 for DHCP using /etc/network/interfaces.d/ ---
 echo -e "${STEP_EMOJI} ${BLUE}7.1. Configuring eth1 for DHCP using /etc/network/interfaces.d/...${RESET}"
@@ -259,18 +116,18 @@ EOL
 if [ $? -ne 0 ]; then error_exit "Failed to write $ETH0_CONF."; fi
 echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH0_CONF created for hotplug, no IP assigned.${RESET}\n"
 
-# --- Step 7.3: Configure eth2 LTE for hotplug (no IP) using /etc/network/interfaces.d/ ---
-echo -e "${STEP_EMOJI} ${BLUE}7.3. Configuring eth2 for DHCP using /etc/network/interfaces.d/...${RESET}"
-ETH2_CONF="$INTERFACES_D_DIR/eth2"
+# --- Step 7.3: Configure usb0 LTE for hotplug (no IP) using /etc/network/interfaces.d/ ---
+echo -e "${STEP_EMOJI} ${BLUE}7.3. Configuring usb0 for DHCP using /etc/network/interfaces.d/...${RESET}"
+USB0_CONF="$INTERFACES_D_DIR/usb0"
 
-cat <<EOL > "$ETH2_CONF"
-auto eth2
-    allow-hotplug eth2
-    iface eth2 inet dhcp
+cat <<EOL > "$USB0_CONF"
+auto usb0
+    allow-hotplug usb0
+    iface usb0 inet dhcp
 EOL
-if [ $? -ne 0 ]; then error_exit "Failed to write $ETH2_CONF."; fi
-echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH2_CONF created for DHCP.${RESET}"
-echo -e "     ${WARNING_EMOJI} ${YELLOW}Note: 'eth2' is configured via '/etc/network/interfaces.d/'. Ensure NetworkManager is disabled to avoid conflicts and a reboot is required for changes to take full effect.${RESET}\n"
+if [ $? -ne 0 ]; then error_exit "Failed to write $USB0_CONF."; fi
+echo -e "     ${SUCCESS_EMOJI} ${GREEN}$USB0_CONF created for DHCP.${RESET}"
+echo -e "     ${WARNING_EMOJI} ${YELLOW}Note: 'usb0' is configured via '/etc/network/interfaces.d/'. Ensure NetworkManager is disabled to avoid conflicts and a reboot is required for changes to take full effect.${RESET}\n"
 
 # --- Step 8: Reload systemd, enable, and restart services ---
 # Adjusted numbering from previous step
@@ -286,110 +143,10 @@ if [ -f "/etc/systemd/system/systemd-networkd-wait-online.service.d/override.con
 fi
 
 systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
-# Hostapd and isc-dhcp-server restart handled here as well, although already attempted.
-# This ensures they pick up the wlan0 configuration.
-systemctl restart hostapd || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart hostapd. Check logs after reboot.${RESET}"
-systemctl restart isc-dhcp-server || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart isc-dhcp-server. Check logs after reboot.${RESET}"
+
 # Disable network manager as it mangles with hostapd and causes IEEE 802.11: disassociated
 sudo systemctl disable NetworkManager || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to disable NetworkManager. Check logs after reboot.${RESET}"
 echo -e "${SUCCESS_EMOJI} ${GREEN}Services reloaded and restarted (if possible).${RESET}\n"
-
-
-# --- Step 9: Configure SSH properly (overwriting) ---
-echo -e "${STEP_EMOJI} ${BLUE}9. Configuring /etc/ssh/sshd_config (overwriting existing file)...${RESET}"
-SSHD_CONF="/etc/ssh/sshd_config"
-
-# Backup original sshd_config
-cp "$SSHD_CONF" "${SSHD_CONF}.bak_$(date +%Y%m%d%H%M%S)"
-echo -e "    ${INFO_EMOJI} ${BLUE}Backup of $SSHD_CONF created at ${SSHD_CONF}.bak_$(date +%Y%m%d%H%M%S)${RESET}"
-
-cat <<'EOF' > "$SSHD_CONF"
-Protocol 2
-AddressFamily any
-Port 22
-AcceptEnv LANG LC_*
-Subsystem sftp /usr/lib/openssh/sftp-server
-
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
-
-# SSH Authentication
-UsePAM yes
-PubkeyAuthentication yes
-PasswordAuthentication no
-PermitEmptyPasswords no
-#PermitRootLogin no
-HostbasedAuthentication no
-ChallengeResponseAuthentication no
-KerberosAuthentication no
-GSSAPIAuthentication no
-IgnoreRhosts yes
-
-# SSH Authorized Keyfiles
-AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2
-
-# SSH Session
-TCPKeepAlive yes
-ClientAliveInterval 600
-ClientAliveCountMax 2
-LoginGraceTime 60
-MaxAuthTries 3
-Compression no
-
-# SSH Information Disclosure
-DebianBanner no
-PrintMotd no
-PrintLastLog yes
-
-# SSH Logging
-LogLevel VERBOSE
-SyslogFacility AUTH
-
-# SSH Tunneling & Forwarding
-AllowAgentForwarding no
-AllowTcpForwarding yes
-PermitTunnel yes
-X11Forwarding no
-PermitUserEnvironment no
-
-# SSH File Mode & Ownership Checking
-StrictModes yes
-#UsePrivilegeSeparation yes # deprecated
-
-# SSH Encryption Ciphers
-# recommended from https://www.sshaudit.com/hardening_guides.html#ubuntu_20_04_lts
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes256-ctr,aes192-ctr
-
-# SSH Message Authentication Codes (MAC)
-# recommended from https://www.sshaudit.com/hardening_guides.html#ubuntu_20_04_lts
-MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
-
-# SSH Host Key Algorithms
-# recommended from https://www.sshaudit.com/hardening_guides.html#ubuntu_20_04_lts
-HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
-
-# SSH Key Exchange Algorithms
-# recommended from https://www.sshaudit.com/hardening_guides.html#ubuntu_20_04_lts
-KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
-
-# Allow older public key types
-#PubkeyAcceptedKeyTypes=+ssh-rsa
-
-# SSH Custom Network Configuration (remove after setup)
-Match Address 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
-    PasswordAuthentication yes
-
-# SSH Custom Network Configuration (hotspot or vpn)
-Match Address 192.168.200.0/24,100.64.0.0/10
-    PasswordAuthentication yes    
-EOF
-if [ $? -ne 0 ]; then error_exit "Failed to write $SSHD_CONF."; fi
-echo -e "${SUCCESS_EMOJI} ${GREEN}$SSHD_CONF overwritten successfully.${RESET}\n"
-
-echo -e "${STEP_EMOJI} ${BLUE}10. Restarting SSH service to apply changes...${RESET}"
-systemctl restart ssh.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to restart SSH service. Check for errors.${RESET}"
-echo -e "${SUCCESS_EMOJI} ${GREEN}SSH service restart attempted.${RESET}\n"
 
 # --- Step 11: Install and configure nac_bypass ---
 echo -e "${STEP_EMOJI} ${BLUE}11. Installing and configuring nac_bypass tool...${RESET}"
@@ -541,43 +298,42 @@ EOF_FIX_ROUTE
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}$FIX_LTE_ROUTING_SCRIPT created and made executable.${RESET}\n"
 
     # --- Step 13: Install and Configure WireGuard VPN (Optional) ---
-    if [ "$INSTALL_WIREGUARD" = true ]; then
-        echo -e "${STEP_EMOJI} ${BLUE}13. Installing and configuring WireGuard VPN...${RESET}"
+    if [ "$INSTALL_TAILSCALE" = true ]; then
+        echo -e "${STEP_EMOJI} ${BLUE}13. Installing and configuring Tailscale VPN...${RESET}"
+        
+        curl -fsSL https://tailscale.com/install.sh | sh || error_exit "Failed to install Tailscale."
 
-        echo -e "    ${INFO_EMOJI} ${BLUE}13.1. Installing WireGuard package...${RESET}"
-        apt-get install -y wireguard || error_exit "Failed to install wireguard."
-        echo -e "    ${SUCCESS_EMOJI} ${GREEN}WireGuard installed.${RESET}"
+        # --- Create systemd drop-in so Tailscale waits for LTE connection ---
+        echo -e "    ${INFO_EMOJI} ${BLUE}Creating systemd drop-in for tailscaled to wait for LTE...${RESET}"
+        TAILSCALE_DROPIN_DIR="/etc/systemd/system/tailscaled.service.d"
+        TAILSCALE_DROPIN_FILE="$TAILSCALE_DROPIN_DIR/wait-for-lte.conf"
+        mkdir -p "$TAILSCALE_DROPIN_DIR" || error_exit "Failed to create drop-in directory."
 
-        echo -e "    ${INFO_EMOJI} ${BLUE}13.2. Creating systemd drop-in for wg-quick@wg0.service for internet connectivity check...${RESET}"
-        WG_DROPIN_DIR="/etc/systemd/system/wg-quick@wg0.service.d"
-        WG_DROPIN_FILE="$WG_DROPIN_DIR/wait-for-internet.conf"
-        mkdir -p "$WG_DROPIN_DIR" || error_exit "Failed to create WireGuard drop-in directory."
-
-        cat <<'EOL' > "$WG_DROPIN_FILE"
+        cat <<EOL > "$TAILSCALE_DROPIN_FILE"
 [Unit]
-# Ensure WireGuard starts AFTER the LTE connection service has initiated
 After=huawei-lte-connect.service
 Requires=huawei-lte-connect.service
 
 [Service]
-# This ExecStartPre command will run BEFORE wg-quick up wg0
-# It continuously pings a reliable public IP via eth2 until successful,
-# indicating actual internet connectivity through the LTE modem.
-ExecStartPre=/bin/bash -c 'echo "Waiting for internet connectivity on eth2 for WireGuard..."; while ! ping -c 1 -I eth2 -W 3 8.8.8.8 > /dev/null 2>&1; do echo "eth2 not connected to internet, retrying in 5s..."; sleep 5; done; echo "eth2 is online, starting WireGuard."'
+# Wait for LTE internet connectivity before starting tailscaled
+ExecStartPre=/bin/bash -c 'echo "Waiting for internet on usb0..."; while ! ping -c 1 -I usb0 -W 3 8.8.8.8 >/dev/null 2>&1; do echo "usb0 not online yet, retrying in 5s..."; sleep 5; done; echo "usb0 is online, starting Tailscale."'
 EOL
-        if [ $? -ne 0 ]; then error_exit "Failed to write $WG_DROPIN_FILE."; fi
-        echo -e "    ${SUCCESS_EMOJI} ${GREEN}$WG_DROPIN_FILE created.${RESET}"
 
-        echo -e "    ${INFO_EMOJI} ${BLUE}13.3. Reloading systemd daemon and enabling wg-quick@wg0.service...${RESET}"
+        if [ $? -ne 0 ]; then error_exit "Failed to write $TAILSCALE_DROPIN_FILE."; fi
+        echo -e "    ${SUCCESS_EMOJI} ${GREEN}$TAILSCALE_DROPIN_FILE created.${RESET}"
+
         systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
-        systemctl enable wg-quick@wg0.service || echo -e "${WARNING_EMOJI} ${YELLOW}Warning: Failed to enable wg-quick@wg0.service. Check logs after reboot.${RESET}"
-        echo -e "    ${SUCCESS_EMOJI} ${GREEN}wg-quick@wg0.service enabled.${RESET}\n"
-    else
-        echo -e "${INFO_EMOJI} ${BLUE}Skipping WireGuard VPN setup as requested. Step 14 omitted.${RESET}\n"
-    fi # End of WireGuard setup conditional block
+        systemctl enable --now tailscaled || error_exit "Failed to enable and start tailscaled."
 
+        # Run tailscale up with your key
+        tailscale up --authkey "$TAILSCALE_AUTHKEY" || error_exit "Failed to bring up Tailscale."
+
+        echo -e "    ${SUCCESS_EMOJI} ${GREEN}Tailscale setup completed successfully.${RESET}\n"
+    else
+        echo -e "${INFO_EMOJI} ${BLUE}Skipping Tailscale VPN setup as requested.${RESET}\n"
+    fi
 else
-    echo -e "${INFO_EMOJI} ${BLUE}Skipping LTE module setup and WireGuard VPN setup as requested. Steps 13 & 14 omitted.${RESET}\n"
+    echo -e "${INFO_EMOJI} ${BLUE}Skipping LTE module setup and Tailscale VPN setup as requested. Steps 13 & 14 omitted.${RESET}\n"
 fi # End of LTE module setup conditional block
 
 
@@ -585,9 +341,6 @@ echo -e "${BOLD}${GREEN}--------------------------------------------------------
 echo -e "${BOLD}${GREEN}Setup complete!${RESET}"
 echo -e "${BOLD}${GREEN}----------------------------------------------------------------${RESET}"
 echo -e "${INFO_EMOJI} ${BLUE}Please reboot your Raspberry Pi for all changes to take full effect.${RESET}"
-echo -e "The Wi-Fi hotspot '${BOLD}${WIFI_SSID}${RESET}${BLUE}' with password '${BOLD}${WIFI_PASSWORD}${RESET}${BLUE}' should be available after reboot.${RESET}"
-echo -e "You can connect to it and devices should get IPs from 192.168.200.2-100.${RESET}"
-echo -e "SSH access from 192.168.200.0/24 will allow password authentication, otherwise pubkey auth is required.${RESET}\n"
 
 echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
 echo -e "${BOLD}${CYAN}NAC Bypass Tool Information:${RESET}"
