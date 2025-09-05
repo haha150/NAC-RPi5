@@ -62,7 +62,7 @@ if [[ "$INSTALL_LTE_MODULE_CHOICE" == "y" ]]; then
         error_exit "SIM Card PIN cannot be empty if setting up LTE."
     fi
 
-    # --- User Input for WireGuard VPN Setup Option ---
+    # --- User Input for Tailscale VPN Setup Option ---
     echo -e "\n${INFO_EMOJI} ${BLUE}Do you want to set up an automatic Tailscale VPN connection? (y/n): ${RESET}"
     read -p "Enter 'y' or 'n': " -n 1 -r INSTALL_TAILSCALE_CHOICE
     echo
