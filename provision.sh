@@ -204,7 +204,7 @@ if [ -d "$NAC_BYPASS_DIR" ]; then
     echo -e "    ${INFO_EMOJI} ${BLUE}$NAC_BYPASS_DIR already exists. Pulling latest changes...${RESET}"
     (cd "$NAC_BYPASS_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for nac_bypass.${RESET}"
 else
-    git clone https://github.com/scipag/nac_bypass "$NAC_BYPASS_DIR" || error_exit "Failed to clone nac_bypass repository."
+    git clone https://github.com/haha150/nac_bypass "$NAC_BYPASS_DIR" || error_exit "Failed to clone nac_bypass repository."
 fi
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}nac_bypass repository cloned/updated.${RESET}"
 
@@ -225,7 +225,7 @@ if [ "$INSTALL_LTE_MODULE" = true ]; then
     else
         # Ensure the parent directory exists before cloning
         mkdir -p "/home/$LTE_USERNAME" || error_exit "Failed to create /home/$LTE_USERNAME directory."
-        git clone https://github.com/zbchristian/huawei_hilink_api "$HUAWEI_HILINK_DIR" || error_exit "Failed to clone huawei_hilink_api repository."
+        git clone https://github.com/haha150/huawei_hilink_api "$HUAWEI_HILINK_DIR" || error_exit "Failed to clone huawei_hilink_api repository."
         chown -R "$LTE_USERNAME":"$LTE_USERNAME" "$HUAWEI_HILINK_DIR" # Set ownership
     fi
     echo -e "    ${SUCCESS_EMOJI} ${GREEN}huawei_hilink_api repository cloned/updated.${RESET}"
