@@ -69,6 +69,10 @@ if [[ "$INSTALL_LTE_MODULE_CHOICE" == "y" ]]; then
     INSTALL_TAILSCALE_CHOICE=${INSTALL_TAILSCALE_CHOICE,,} # Convert to lowercase
     if [[ "$INSTALL_TAILSCALE_CHOICE" == "y" ]]; then
         INSTALL_TAILSCALE=true
+        # --- User Input for Tailscale Auth Key and Headscale Server ---
+        echo -e "\n${INFO_EMOJI} ${BLUE}Please provide your Headscale login server URL (e.g., https://headscale.yourdomain.com):${RESET}"
+        read -p "Enter Headscale login server URL: " HEADSCALE_LOGIN_SERVER
+        # HEADSCALE_LOGIN_SERVER can be empty if using Tailscale's official servers
         echo -e "\n${INFO_EMOJI} ${BLUE}Please provide your Tailscale auth key:${RESET}"
         read -p "Enter Tailscale auth key: " TAILSCALE_AUTHKEY
         if [ -z "$TAILSCALE_AUTHKEY" ]; then
@@ -288,6 +292,7 @@ EOL
 ip route add 10.0.0.0/8 via 169.254.66.1 dev br0 || true
 ip route add 172.16.0.0/12 via 169.254.66.1 dev br0 || true
 ip route add 192.168.0.0/16 via 169.254.66.1 dev br0 || true
+ip route add 169.254.0.0/16 via 169.254.66.1 dev br0 || true
 
 # Remove default route by nac_bypass.sh (if it exists)
 ip route del default via 169.254.66.1 dev br0 || true
@@ -325,8 +330,12 @@ EOL
         systemctl daemon-reload || error_exit "Failed to reload systemd daemon."
         systemctl enable --now tailscaled || error_exit "Failed to enable and start tailscaled."
 
-        # Run tailscale up with your key
-        tailscale up --authkey "$TAILSCALE_AUTHKEY" || error_exit "Failed to bring up Tailscale."
+        # Run tailscale up with or without --login-server depending on whether HEADSCALE_LOGIN_SERVER is set
+        if [ -n "$HEADSCALE_LOGIN_SERVER" ]; then
+            tailscale up --login-server "$HEADSCALE_LOGIN_SERVER" --authkey "$TAILSCALE_AUTHKEY" || error_exit "Failed to bring up Tailscale."
+        else
+            tailscale up --authkey "$TAILSCALE_AUTHKEY" || error_exit "Failed to bring up Tailscale."
+        fi
 
         echo -e "    ${SUCCESS_EMOJI} ${GREEN}Tailscale setup completed successfully.${RESET}\n"
     else
