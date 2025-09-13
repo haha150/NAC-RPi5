@@ -216,6 +216,16 @@ echo -e "    ${INFO_EMOJI} ${BLUE}11.8. Setting permissions for nac_bypass_setup
 chmod +x "$NAC_BYPASS_DIR/nac_bypass_setup.sh" || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to set executable permissions for nac_bypass_setup.sh.${RESET}"
 echo -e "    ${SUCCESS_EMOJI} ${GREEN}Permissions set for nac_bypass_setup.sh.${RESET}\n"
 
+echo -e "    ${INFO_EMOJI} ${BLUE}11.8. Cloning silentbridge repository...${RESET}"
+SILENTBRIDGE_DIR="$HOME/silentbridge"
+if [ -d "$SILENTBRIDGE_DIR" ]; then
+    echo -e "    ${INFO_EMOJI} ${BLUE}$SILENTBRIDGE_DIR already exists. Pulling latest changes...${RESET}"
+    (cd "$SILENTBRIDGE_DIR" && git pull) || echo -e "    ${WARNING_EMOJI} ${YELLOW}Warning: Failed to pull latest changes for silentbridge.${RESET}"
+else
+    git clone https://github.com/haha150/silentbridge "$SILENTBRIDGE_DIR" || error_exit "Failed to clone silentbridge repository."
+fi
+echo -e "    ${SUCCESS_EMOJI} ${GREEN}silentbridge repository cloned/updated.${RESET}"
+
 # --- Step 12: Install and configure Huawei LTE Connect Service (Optional) ---
 if [ "$INSTALL_LTE_MODULE" = true ]; then
     echo -e "${STEP_EMOJI} ${BLUE}12. Installing and configuring Huawei LTE Connect Service...${RESET}"
