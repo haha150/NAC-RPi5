@@ -108,17 +108,17 @@ if [ $? -ne 0 ]; then error_exit "Failed to write $ETH1_CONF."; fi
 echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH1_CONF created for DHCP.${RESET}"
 echo -e "     ${WARNING_EMOJI} ${YELLOW}Note: You are configuring 'eth1' using '/etc/network/interfaces.d/' while 'wlan0' is managed by 'systemd-networkd'. This is a hybrid setup and requires a reboot to take full effect for 'eth1'. Ensure NetworkManager is disabled to avoid conflicts.${RESET}\n"
 
-# --- Step 7.2: Configure eth0 for hotplug (no IP) using /etc/network/interfaces.d/ ---
-echo -e "${STEP_EMOJI} ${BLUE}7.2. Configuring eth0 for hotplug (no IP assigned) using /etc/network/interfaces.d/...${RESET}"
-ETH0_CONF="$INTERFACES_D_DIR/eth0"
+# --- Step 7.2: Configure eth2 for hotplug (no IP) using /etc/network/interfaces.d/ ---
+echo -e "${STEP_EMOJI} ${BLUE}7.2. Configuring eth2 for hotplug (no IP assigned) using /etc/network/interfaces.d/...${RESET}"
+ETH2_CONF="$INTERFACES_D_DIR/eth2"
 
-cat <<EOL > "$ETH0_CONF"
-auto eth0
-    allow-hotplug eth0
-    iface eth0 inet dhcp
+cat <<EOL > "$ETH2_CONF"
+auto eth2
+    allow-hotplug eth2
+    iface eth2 inet dhcp
 EOL
-if [ $? -ne 0 ]; then error_exit "Failed to write $ETH0_CONF."; fi
-echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH0_CONF created for hotplug, no IP assigned.${RESET}\n"
+if [ $? -ne 0 ]; then error_exit "Failed to write $ETH2_CONF."; fi
+echo -e "     ${SUCCESS_EMOJI} ${GREEN}$ETH2_CONF created for hotplug, no IP assigned.${RESET}\n"
 
 # --- Step 7.3: Configure usb0 LTE for hotplug (no IP) using /etc/network/interfaces.d/ ---
 echo -e "${STEP_EMOJI} ${BLUE}7.3. Configuring usb0 for DHCP using /etc/network/interfaces.d/...${RESET}"
@@ -366,12 +366,12 @@ echo -e "${BOLD}${CYAN}NAC Bypass Tool Information:${RESET}"
 echo -e "${BOLD}${CYAN}----------------------------------------------------------------${RESET}"
 echo -e "${INFO_EMOJI} ${BLUE}The 'nac_bypass' tool has been installed in: ${BOLD}$NAC_BYPASS_DIR${RESET}"
 echo -e "${INFO_EMOJI} ${BLUE}To use it, follow these steps after reboot and connecting the devices:${RESET}"
-echo -e "${STEP_EMOJI} ${MAGENTA}1. Connect the switch to eth0 (native LAN interface of RPi4).${RESET}"
+echo -e "${STEP_EMOJI} ${MAGENTA}1. Connect the switch to eth2.${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}2. Connect victim (e.g. printer) to eth1 (external USB LAN adapter).${RESET}"
 echo -e "${STEP_EMOJI} ${MAGENTA}3. Change directory to the nac_bypass tool:${RESET}"
 echo -e "    ${MAGENTA}    cd ${BOLD}$NAC_BYPASS_DIR${RESET}"
-echo -e "${STEP_EMOJI} ${MAGENTA}4. Start the NAC bypass (replace eth0 and eth1 with your actual interface names if different):${RESET}"
-echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth0 -2 eth1 -S${RESET}"
+echo -e "${STEP_EMOJI} ${MAGENTA}4. Start the NAC bypass (replace eth1 and eth2 with your actual interface names if different):${RESET}"
+echo -e "    ${MAGENTA}    sudo ./nac_bypass_setup.sh -1 eth1 -2 eth2 -S${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}The script will prompt you to wait. After it completes, you can proceed with your network scan.${RESET}"
 echo -e "    ${INFO_EMOJI} ${BLUE}Remember for Responder, you need to set it up to listen on the bridge interface (br0) and change the answering IP to the victim's IP:${RESET}"
 echo -e "    ${MAGENTA}    ./Responder.py -I br0 -e victim.ip${RESET}"
